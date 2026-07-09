@@ -1,5 +1,6 @@
 mod cli;
 mod commands;
+mod stow;
 
 use anyhow::Result;
 use clap::Parser;
@@ -10,10 +11,8 @@ fn main() -> Result<()> {
 
     match cli.command {
         Commands::Sync => commands::sync::run()?,
-        Commands::Bootstrap { repo } => println!("bootstrap {repo}"),
-        Commands::Update => println!("update"),
-        Commands::Edit => println!("edit"),
-        Commands::Status => println!("status"),
+        Commands::Update => commands::update::run()?,
+        Commands::Status => commands::status::run()?,
     }
 
     Ok(())

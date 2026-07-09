@@ -10,8 +10,6 @@ pub struct Cli {
 #[derive(Subcommand)]
 pub enum Commands {
     Sync,
-    Bootstrap { repo: String },
     Update,
-    Edit,
     Status,
 }
