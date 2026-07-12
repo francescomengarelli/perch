@@ -21,7 +21,7 @@ fn main() -> Result<()> {
         }
         Some(path)
     } else {
-        let fallback = expand_tilde(PathBuf::from("~/.config/dot/dot.toml"));
+        let fallback = expand_tilde(PathBuf::from("~/.config/dot/config.toml"));
         fallback.exists().then_some(fallback)
     };
 
