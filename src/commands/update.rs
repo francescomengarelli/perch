@@ -2,7 +2,9 @@ use anyhow::{Context, Result};
 use std::path::PathBuf;
 use std::process::Command;
 
-pub fn run() -> Result<()> {
+use crate::context;
+
+pub fn run(context: &context::Context) -> Result<()> {
     let home = std::env::var("HOME").context("HOME not set")?;
     let dotfiles = PathBuf::from(&home).join("dotfiles");
 
@@ -15,5 +17,5 @@ pub fn run() -> Result<()> {
         anyhow::bail!("git pull failed");
     }
 
-    crate::commands::sync::run()
+    crate::commands::sync::run(context)
 }
