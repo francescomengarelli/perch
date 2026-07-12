@@ -17,4 +17,5 @@ pub enum Commands {
     Sync,
     Update,
     Status,
+    Add { module: String, path: Vec<PathBuf> },
 }

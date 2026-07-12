@@ -2,7 +2,7 @@ use std::{path::PathBuf, process::Stdio};
 
 use crate::{
     config::{Config, Module},
-    utils::expand_tilde,
+    utils::{absolutize, expand_tilde},
 };
 
 pub struct Context {
@@ -11,15 +11,15 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn new(config: Option<Config>) -> Self {
-        let dotfiles_dir = if let Some(config) = &config {
+    pub fn new(config: Option<Config>) -> anyhow::Result<Self> {
+        let mut dotfiles_dir = if let Some(config) = &config {
             config
                 .dotfiles_dir
                 .as_ref()
                 .map(|d| expand_tilde(PathBuf::from(d)))
-                .unwrap_or_else(|| expand_tilde(PathBuf::from("~/dotfiles")))
+                .unwrap_or_else(|| expand_tilde(PathBuf::from("~/dotfiles")))?
         } else {
-            expand_tilde(PathBuf::from("~/dotfiles"))
+            expand_tilde(PathBuf::from("~/dotfiles"))?
         };
 
         let modules = if let Some(config) = config {
@@ -41,14 +41,16 @@ impl Context {
             ]
         };
 
-        Context {
+        dotfiles_dir = absolutize(dotfiles_dir)?;
+
+        Ok(Context {
             dotfiles_dir,
             modules: modules
                 .into_iter()
                 .filter(|m| m.when.as_deref().map(check_condition).unwrap_or(true))
                 .map(|m| m.name)
                 .collect(),
-        }
+        })
     }
 }
 

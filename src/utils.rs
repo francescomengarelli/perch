@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub fn expand_tilde(path: PathBuf) -> Result<PathBuf> {
     if let Ok(stripped) = path.strip_prefix("~") {
@@ -12,4 +12,24 @@ pub fn expand_tilde(path: PathBuf) -> Result<PathBuf> {
 
 pub fn get_home_dir() -> Result<PathBuf> {
     dirs::home_dir().context("Could not determine home directory")
+}
+
+pub fn absolutize(path: PathBuf) -> Result<PathBuf> {
+    let stripped = expand_tilde(path)?;
+
+    if stripped.is_absolute() {
+        Ok(stripped)
+    } else {
+        Ok(std::env::current_dir()?.join(stripped))
+    }
+}
+
+pub fn walk_files(dir: &Path) -> impl Iterator<Item = Result<PathBuf>> {
+    walkdir::WalkDir::new(dir)
+        .into_iter()
+        .filter_map(|e| match e {
+            Ok(e) if e.file_type().is_dir() => None,
+            Ok(e) => Some(Ok(e.into_path())),
+            Err(e) => Some(Err(e.into())),
+        })
 }
