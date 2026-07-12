@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, process::Stdio};
 
 use crate::{
     config::{Config, Module},
@@ -56,6 +56,8 @@ fn check_condition(cmd: &str) -> bool {
     std::process::Command::new("sh")
         .arg("-c")
         .arg(cmd)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .status()
         .map(|s| s.success())
         .unwrap_or(false)
