@@ -1,10 +1,15 @@
+use anyhow::{Context, Result};
 use std::path::PathBuf;
 
-pub fn expand_tilde(path: PathBuf) -> PathBuf {
-    if let Ok(home) = std::env::var("HOME") {
-        if let Ok(stripped) = path.strip_prefix("~") {
-            return PathBuf::from(home).join(stripped);
-        }
+pub fn expand_tilde(path: PathBuf) -> Result<PathBuf> {
+    if let Ok(stripped) = path.strip_prefix("~") {
+        let home = get_home_dir()?;
+        Ok(home.join(stripped))
+    } else {
+        Ok(path)
     }
-    path
+}
+
+pub fn get_home_dir() -> Result<PathBuf> {
+    dirs::home_dir().context("Could not determine home directory")
 }
