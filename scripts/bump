@@ -11,6 +11,9 @@ CARGO_LOCK_PATH="$REPO_ROOT/Cargo.lock"
 CARGO_TMP_PATH="$CARGO_PATH.bump.tmp"
 trap 'rm -f "$CARGO_TMP_PATH"' EXIT
 
+CARGO_BAK_PATH="$CARGO_PATH.bak"
+trap 'rm -f "$CARGO_BAK_PATH"' EXIT
+
 USAGE="Usage: bump [major|minor|patch] <message>"
 
 if [ -z "$1" ] || [ -z "$2" ]; then
@@ -85,15 +88,16 @@ sed "/\[package\]/,/^\[.*/s/^$OLD/$NEW/" "$CARGO_PATH" > "$CARGO_TMP_PATH"
 
 CARGO_UPDATE="cargo update"
 
+mv "$CARGO_PATH" "$CARGO_BAK_PATH"
+mv "$CARGO_TMP_PATH" "$CARGO_PATH"
 
 set -ex
-if ! cargo update; then
+if ! cargo update 2>&1 > /dev/null; then
     printf "error: cargo update failed"
+    mv "$CARGO_BAK_PATH" "$CARGO_PATH"
     exit 1
 fi
-set +ex
-
-mv "$CARGO_TMP_PATH" "$CARGO_PATH"
+{ set +ex; } 2>/dev/null
 
 set -ex
 git add "$CARGO_PATH" "$CARGO_LOCK_PATH"
@@ -101,5 +105,5 @@ git add "$CARGO_PATH" "$CARGO_LOCK_PATH"
 git commit -m "chore: bump to v$BUMPED"
 
 git tag "v$BUMPED" -m "$MESSAGE"
-set +ex
+{ set +ex; } 2>/dev/null
 
