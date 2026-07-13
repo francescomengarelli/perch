@@ -1,23 +1,25 @@
 #!/bin/sh
+trap 'rm -f "$CARGO_TMP_PATH" "$CARGO_BAK_PATH"' EXIT
+
+perror() {
+    printf "ERROR: %s\n" "$*" >&2
+}
 
 if ! REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null); then
-    printf "error: you are outside of the repository\n"
+    perror "you are outside of the repository"
     exit 1
 fi
 
-CARGO_PATH="$REPO_ROOT/Cargo.toml"
 CARGO_LOCK_PATH="$REPO_ROOT/Cargo.lock"
 
+CARGO_PATH="$REPO_ROOT/Cargo.toml"
 CARGO_TMP_PATH="$CARGO_PATH.bump.tmp"
-trap 'rm -f "$CARGO_TMP_PATH"' EXIT
-
 CARGO_BAK_PATH="$CARGO_PATH.bak"
-trap 'rm -f "$CARGO_BAK_PATH"' EXIT
 
 USAGE="Usage: bump [major|minor|patch] <message>"
 
 if [ -z "$1" ] || [ -z "$2" ]; then
-    printf "error: missing argument\n%s\n" "$USAGE"
+    perror "missing argument\n%s" "$USAGE"
     exit 1
 fi
 
@@ -30,7 +32,7 @@ case "$BUMP" in
     minor) ;;
     patch) ;;
     *) 
-        printf "error: invalid target %s\n%s\n" "$BUMP" "$USAGE"
+        perror "invalid target %s\n%s" "$BUMP" "$USAGE"
         exit 1
         ;;
 esac
@@ -38,7 +40,7 @@ esac
 STATUS=$(git status "$REPO_ROOT" --porcelain)
 
 if [ -n "$STATUS" ]; then
-    printf "error: commit all changes before bumping the version\n"
+    perror "commit all changes before bumping the version"
     exit 1
 fi
 
@@ -46,7 +48,7 @@ VERSION_LN=$(sed -n '/^\[package\]/{:a; n; /^[[:space:]]*version[[:space:]]*=/{p
 VERSION=$(echo "$VERSION_LN" | sed  's/.*"\([^"]*\)"/\1/')
 
 if [ -z "$VERSION" ]; then
-    printf "error: version not found in Cargo.toml"
+    perror "version not found in Cargo.toml"
     exit 1
 fi
 
@@ -59,7 +61,7 @@ MINOR=$(get_number 2)
 PATCH=$(get_number 3)
 
 if [ -z "$MAJOR" ] || [ -z "$MINOR" ] || [ -z "$PATCH" ]; then
-    printf "error: invalid version string in Cargo.toml"
+    perror "invalid version string in Cargo.toml"
     exit 1
 fi
 
@@ -80,7 +82,7 @@ esac
 
 BUMPED="${MAJOR}.${MINOR}.${PATCH}"
 
-printf "bumping from $VERSION to $BUMPED\n"
+printf "bumping from %s to %s\n" "$VERSION" "$BUMPED"
 
 OLD="version = \"$VERSION\""
 NEW="version = \"$BUMPED\""
@@ -92,17 +94,17 @@ mv "$CARGO_TMP_PATH" "$CARGO_PATH"
 
 set -ex
 if ! cargo update > /dev/null 2>&1; then
-    printf "error: cargo update failed"
+    perror "cargo update failed"
     mv "$CARGO_BAK_PATH" "$CARGO_PATH"
     exit 1
 fi
 { set +ex; } 2>/dev/null
 
 set -ex
-git add "$CARGO_PATH" "$CARGO_LOCK_PATH"
+git add "$CARGO_PATH" "$CARGO_LOCK_PATH" > /dev/null 2>&1
 
-git commit -m "chore: bump to v$BUMPED"
+git commit -m "chore: bump to v$BUMPED" > /dev/null 2>&1
 
-git tag "v$BUMPED" -m "$MESSAGE"
+git tag "v$BUMPED" -m "$MESSAGE" > /dev/null 2>&1
 { set +ex; } 2>/dev/null
 
