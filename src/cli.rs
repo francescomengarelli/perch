@@ -54,7 +54,8 @@ pub enum Commands {
     /// Move the dotfiles directory to a new location and re-sync all symlinks.
     ///
     /// The dotfiles directory is physically moved to `path`, then all symlinks
-    /// are updated to point to the new location.
+    /// are updated to point to the new location. ~/.config/dot/config.toml is updated automatically
+    /// (if it exists)
     ///
     /// Example: `dot move-dir ~/new/dotfiles`
     MoveDir {

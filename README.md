@@ -41,12 +41,13 @@ these defaults are replaced entirely — only the modules you define are stowed.
 
 ## Commands
 
-| Command              | What it does                                         |
-| -------------------- | ---------------------------------------------------- |
-| `dot sync`           | Symlink all active modules to their target locations |
-| `dot update`         | Pull latest changes from the remote, then re-sync    |
-| `dot status`         | Run `git status` in the dotfiles repo                |
-| `dot add <m> <path>` | Move files into a module and symlink them back       |
+| Command               | What it does                                         |
+| --------------------- | ---------------------------------------------------- |
+| `dot sync`            | Symlink all active modules to their target locations |
+| `dot update`          | Pull latest changes from the remote, then re-sync    |
+| `dot status`          | Run `git status` in the dotfiles repo                |
+| `dot add <m> <path>`  | Move files into a module and symlink them back       |
+| `dot move-dir <path>` | Move dotfiles dir into a new dir                     |
 
 ## Configuration
 
