@@ -1,34 +1,34 @@
-![GitHub Release](https://img.shields.io/github/v/release/francescomengarelli/dot?display_name=release&style=flat-square&color=blue)
-![License](https://img.shields.io/github/license/francescomengarelli/dot?style=flat-square&color=green)
-![CI](https://img.shields.io/github/actions/workflow/status/francescomengarelli/dot/release.yml?style=flat-square)
+![GitHub Release](https://img.shields.io/github/v/release/francescomengarelli/perch?display_name=release&style=flat-square&color=blue)
+![License](https://img.shields.io/github/license/francescomengarelli/perch?style=flat-square&color=green)
+![CI](https://img.shields.io/github/actions/workflow/status/francescomengarelli/perch/release.yml?style=flat-square)
 
-# dot
+# perch
 
 A minimal dotfiles manager for macOS and Linux.
 
 ## Installation
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/francescomengarelli/dot/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/francescomengarelli/perch/main/install.sh | sh
 ```
 
 Or build from source:
 
 ```sh
-git clone git@github.com:francescomengarelli/dot.git
-cd dot
+git clone git@github.com:francescomengarelli/perch.git
+cd perch
 cargo install --root ~/.local --path .
 ```
 
 ## How it works
 
-dot manages dotfiles by stowing modules from your dotfiles repo into your
+Perch manages dotfiles by stowing modules from your dotfiles repo into your
 home directory. A module is a folder - inside it get symlinked to the
 same relative path under `~`.
 
 `~/dotfiles/macos/.config/nvim/init.lua` → `~/.config/nvim/init.lua`, but only on macOS.
 
-Without a config file, dot runs with hardcoded defaults:
+Without a config file, Perch runs with hardcoded defaults:
 
 | Module   | Stowed when |
 | -------- | ----------- |
@@ -41,17 +41,17 @@ these defaults are replaced entirely — only the modules you define are stowed.
 
 ## Commands
 
-| Command               | What it does                                         |
-| --------------------- | ---------------------------------------------------- |
-| `dot sync`            | Symlink all active modules to their target locations |
-| `dot update`          | Pull latest changes from the remote, then re-sync    |
-| `dot status`          | Run `git status` in the dotfiles repo                |
-| `dot add <m> <path>`  | Move files into a module and symlink them back       |
-| `dot move-dir <path>` | Move dotfiles dir into a new dir                     |
+| Command                 | What it does                                         |
+| ----------------------- | ---------------------------------------------------- |
+| `perch sync`            | Symlink all active modules to their target locations |
+| `perch update`          | Pull latest changes from the remote, then re-sync    |
+| `perch status`          | Run `git status` in the dotfiles repo                |
+| `perch add <m> <path>`  | Move files into a module and symlink them back       |
+| `perch move-dir <path>` | Move dotfiles dir into a new dir                     |
 
 ## Configuration
 
-dot looks for a config at `~/.config/dot/config.toml`.
+Perch looks for a config at `~/.config/perch/config.toml`.
 Pass `--config <path>` to override.
 
 ```toml
@@ -71,13 +71,13 @@ OS, hostname, environment variables, presence of a file, whatever.
 
 ## First-time setup
 
-Your dot config can live inside your dotfiles repo itself.
+Your Perch config can live inside your dotfiles repo itself.
 On a fresh machine:
 
 ```sh
 git clone <your-dotfiles-repo> ~/dotfiles
-dot sync --config ~/dotfiles/common/.config/dot/config.toml
+perch sync --config ~/dotfiles/common/.config/perch/config.toml
 ```
 
-After the first sync, `~/.config/dot/config.toml` is live and
-`dot sync` works without `--config` from then on.
+After the first sync, `~/.config/perch/config.toml` is live and
+`perch sync` works without `--config` from then on.

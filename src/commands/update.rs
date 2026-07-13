@@ -22,7 +22,7 @@ pub fn run(context: &mut context::Context) -> Result<()> {
     let new_config_dotfiles_dir = (|| -> anyhow::Result<Option<config::Config>> {
         for module_name in &context.filtered_modules {
             let module_path = context.dotfiles_dir.join(module_name);
-            let config_path = module_path.join(".config/dot/config.toml");
+            let config_path = module_path.join(".config/perch/config.toml");
             let config_path = config_path.exists().then_some(config_path);
 
             if let Some(config_path) = config_path {

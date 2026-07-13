@@ -22,7 +22,7 @@ fn main() -> Result<()> {
         }
         Some(path)
     } else {
-        let fallback = expand_tilde(&PathBuf::from("~/.config/dot/config.toml"))?;
+        let fallback = expand_tilde(&PathBuf::from("~/.config/perch/config.toml"))?;
         fallback.exists().then_some(fallback)
     };
 

@@ -4,11 +4,11 @@ use std::path::PathBuf;
 /// A dotfiles manager!
 ///
 /// Manages symlinks from a central dotfiles directory to their target
-/// locations on your system. Run `dot <subcommand> --help` for details.
+/// locations on your system.
 #[derive(Parser)]
-#[command(name = "dot", about = "Dotfiles manager", version = env!("CARGO_PKG_VERSION"))]
+#[command(name = "perch", about = "Dotfiles manager", version = env!("CARGO_PKG_VERSION"))]
 pub struct Cli {
-    /// Path to a custom config file (default: ~/.config/dot/config.toml)
+    /// Path to a custom config file (default: ~/.config/perch/config.toml)
     #[arg(long, global = true)]
     pub config: Option<PathBuf>,
 
@@ -41,7 +41,7 @@ pub enum Commands {
     /// `[dotfiles_dir]/[module]/`, then symlinked back to their
     /// original locations. Directories are moved recursively.
     ///
-    /// Example: `dot add linux ~/.config/zathura` moves `~/.config/zathura` to
+    /// Example: `perch add linux ~/.config/zathura` moves `~/.config/zathura` to
     /// `[dotfiles_dir]/linux/.config/zathura`, then symlinks the latter back to
     /// the former.
     Add {
@@ -55,10 +55,10 @@ pub enum Commands {
     /// Move the dotfiles directory to a new location and re-sync all symlinks.
     ///
     /// The dotfiles directory is physically moved to `path`, then all symlinks
-    /// are updated to point to the new location. ~/.config/dot/config.toml is updated automatically
+    /// are updated to point to the new location. ~/.config/perch/config.toml is updated automatically
     /// (if it exists)
     ///
-    /// Example: `dot move-dir ~/new/dotfiles`
+    /// Example: `perch move-dir ~/new/dotfiles`
     MoveDir {
         /// The new path for the dotfiles directory.
         path: PathBuf,
