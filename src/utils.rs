@@ -1,12 +1,21 @@
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
 
-pub fn expand_tilde(path: PathBuf) -> Result<PathBuf> {
+pub fn expand_tilde(path: &Path) -> Result<PathBuf> {
     if let Ok(stripped) = path.strip_prefix("~") {
         let home = get_home_dir()?;
         Ok(home.join(stripped))
     } else {
-        Ok(path)
+        Ok(path.to_path_buf())
+    }
+}
+
+pub fn unexpand_tilde(path: &Path) -> Result<PathBuf> {
+    let home = get_home_dir()?;
+    if let Ok(stripped) = path.strip_prefix(home) {
+        Ok(PathBuf::from("~").join(stripped))
+    } else {
+        Ok(path.to_path_buf())
     }
 }
 
@@ -14,7 +23,7 @@ pub fn get_home_dir() -> Result<PathBuf> {
     dirs::home_dir().context("Could not determine home directory")
 }
 
-pub fn absolutize(path: PathBuf) -> Result<PathBuf> {
+pub fn absolutize(path: &Path) -> Result<PathBuf> {
     let stripped = expand_tilde(path)?;
 
     if stripped.is_absolute() {

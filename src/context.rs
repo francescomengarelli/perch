@@ -7,23 +7,24 @@ use crate::{
 
 pub struct Context {
     pub dotfiles_dir: PathBuf,
-    pub modules: Vec<String>,
+    pub filtered_modules: Vec<String>,
+    pub all_modules: Vec<String>,
 }
 
 impl Context {
-    pub fn new(config: Option<Config>) -> anyhow::Result<Self> {
+    pub fn new(config: Option<&Config>) -> anyhow::Result<Self> {
         let mut dotfiles_dir = if let Some(config) = &config {
             config
                 .dotfiles_dir
                 .as_ref()
-                .map(|d| expand_tilde(PathBuf::from(d)))
-                .unwrap_or_else(|| expand_tilde(PathBuf::from("~/dotfiles")))?
+                .map(|d| expand_tilde(&PathBuf::from(d)))
+                .unwrap_or_else(|| expand_tilde(&PathBuf::from("~/dotfiles")))?
         } else {
-            expand_tilde(PathBuf::from("~/dotfiles"))?
+            expand_tilde(&PathBuf::from("~/dotfiles"))?
         };
 
         let modules = if let Some(config) = config {
-            config.module
+            config.module.clone()
         } else {
             vec![
                 Module {
@@ -41,15 +42,16 @@ impl Context {
             ]
         };
 
-        dotfiles_dir = absolutize(dotfiles_dir)?;
+        dotfiles_dir = absolutize(&dotfiles_dir)?;
 
         Ok(Context {
             dotfiles_dir,
-            modules: modules
-                .into_iter()
+            filtered_modules: modules
+                .iter()
                 .filter(|m| m.when.as_deref().map(check_condition).unwrap_or(true))
-                .map(|m| m.name)
+                .map(|m| m.name.clone())
                 .collect(),
+            all_modules: modules.into_iter().map(|m| m.name).collect(),
         })
     }
 }

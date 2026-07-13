@@ -50,4 +50,15 @@ pub enum Commands {
         /// Paths to move into the module. Directories are moved recursively.
         path: Vec<PathBuf>,
     },
+
+    /// Move the dotfiles directory to a new location and re-sync all symlinks.
+    ///
+    /// The dotfiles directory is physically moved to `path`, then all symlinks
+    /// are updated to point to the new location.
+    ///
+    /// Example: `dot move-dir ~/new/dotfiles`
+    MoveDir {
+        /// The new path for the dotfiles directory.
+        path: PathBuf,
+    },
 }

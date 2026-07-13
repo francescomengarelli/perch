@@ -15,25 +15,36 @@ use cli::{Cli, Commands};
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    let config_path = if let Some(path) = cli.config.map(expand_tilde) {
+    let config_path = if let Some(path) = cli.config.map(|f| expand_tilde(&f)) {
         let path = path?;
         if !path.exists() {
             anyhow::bail!("config file not found: {}", path.display());
         }
         Some(path)
     } else {
-        let fallback = expand_tilde(PathBuf::from("~/.config/dot/config.toml"))?;
+        let fallback = expand_tilde(&PathBuf::from("~/.config/dot/config.toml"))?;
         fallback.exists().then_some(fallback)
     };
 
-    let config = config_path.map(|p| config::load(&p)).transpose()?;
-    let context = Context::new(config)?;
+    let mut config = config_path.as_ref().map(|p| config::load(&p)).transpose()?;
+    let mut context = Context::new(config.as_ref())?;
 
     match cli.command {
         Commands::Sync => commands::sync::run(&context)?,
         Commands::Update => commands::update::run(&context)?,
         Commands::Status => commands::status::run(&context)?,
         Commands::Add { path, module } => commands::add::run(&context, &path, &module)?,
+        Commands::MoveDir { path } => commands::move_dir::run(&mut context, &path)?,
+    }
+
+    // FIXME: clean this up
+    if let (Some(config), Some(config_path)) = (&mut config, &config_path) {
+        config.dotfiles_dir = Some(
+            utils::unexpand_tilde(&context.dotfiles_dir)?
+                .to_string_lossy()
+                .to_string(),
+        );
+        config::save(&config, &config_path)?;
     }
 
     Ok(())
