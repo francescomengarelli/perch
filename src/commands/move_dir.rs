@@ -3,7 +3,7 @@ use std::{fs, path::Path, path::PathBuf};
 
 use crate::{context, utils};
 
-pub fn run(context: &mut context::Context, path: &PathBuf) -> Result<()> {
+pub fn run(context: &mut context::Context, path: &Path) -> Result<()> {
     let path = utils::absolutize(path)?;
 
     let result = (|| -> Result<()> {
