@@ -47,6 +47,9 @@ jobs:
         with:
           tool: cross
 
+      - name: Rust version
+        run: rustc --version && cargo --version
+
       - name: Build
         run: |
           if [ "${{ matrix.use_cross }}" = "true" ]; then
