@@ -12,5 +12,10 @@ pub fn run(context: &context::Context) -> Result<()> {
         crate::stow::stow(&module_path, &PathBuf::from(&home))?;
     }
 
+    eprintln!(
+        "I completed the sync. {} modules stowed",
+        context.filtered_modules.len()
+    );
+
     Ok(())
 }

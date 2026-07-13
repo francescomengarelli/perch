@@ -1,10 +1,21 @@
-use anyhow::{Result, bail};
-use std::{fs, path::Path, path::PathBuf};
+use anyhow::{Context, Result, bail};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
-use crate::{context, utils};
+use crate::{
+    context,
+    utils::{self},
+};
 
 pub fn run(context: &mut context::Context, path: &Path) -> Result<()> {
     let path = utils::absolutize(path)?;
+
+    if path == context.dotfiles_dir {
+        eprintln!("Nothing to move. dotfiles already at {}", path.display());
+        return Ok(());
+    }
 
     let result = (|| -> Result<()> {
         for file in utils::walk_files(&context.dotfiles_dir) {
@@ -14,71 +25,74 @@ pub fn run(context: &mut context::Context, path: &Path) -> Result<()> {
             let target = path.join(&relative_to_dir);
 
             let mut components = relative_to_dir.components();
-            let first: PathBuf = PathBuf::from(components.next().unwrap().as_os_str());
-            let first_str = first.to_str().unwrap();
+            let first_str = components
+                .next()
+                .expect("Path must have at least one component. (should be at LEAST ~/home/user/)")
+                .as_os_str();
+
             let rest: PathBuf = components.collect();
 
-            if context.all_modules.iter().any(|s| s == first_str)
+            utils::copy(&file, &target)?;
+            if context.all_modules.iter().any(|s| first_str == s.as_str())
                 && rest.components().next().is_some()
             {
                 let symlinked = utils::get_home_dir()?.join(rest);
 
-                let symlink_target = fs::read_link(&symlinked);
+                let handle_symlink = if let Err(e) = fs::read_link(&symlinked) {
+                    if !matches!(
+                        e.kind(),
+                        std::io::ErrorKind::NotFound | std::io::ErrorKind::InvalidInput
+                    ) {
+                        bail!(
+                            "I tried to read the symlink at {} — {}",
+                            symlinked.display(),
+                            e
+                        )
+                    }
+                    false
+                } else {
+                    true
+                };
 
-                match symlink_target {
-                    Ok(symlink_target) => {
-                        if symlink_target != file {
-                            bail!(
-                                "{} is pointing somewhere unexpected — {} instead of {}",
-                                symlinked.display(),
-                                symlink_target.display(),
-                                file.display()
-                            );
-                        }
-                    }
-                    Err(e)
-                        if matches!(
-                            e.kind(),
-                            std::io::ErrorKind::NotFound | std::io::ErrorKind::InvalidInput
-                        ) =>
-                    {
-                        copy_file(&file, &target)?;
-                        continue;
-                    }
-                    Err(e) => bail!(
-                        "I tried to read the symlink at {} — {}",
-                        symlinked.display(),
-                        e
-                    ),
+                if handle_symlink {
+                    fs::remove_file(&symlinked)
+                        .with_context(|| format!("I couldn't to remove {}", symlinked.display()))?;
+                    std::os::unix::fs::symlink(&target, &symlinked).with_context(|| {
+                        format!(
+                            "I couldn't symlink from {} to {}",
+                            target.display(),
+                            symlinked.display()
+                        )
+                    })?;
                 }
-
-                copy_file(&file, &target)?;
-                fs::remove_file(&symlinked)?;
-                std::os::unix::fs::symlink(&target, &symlinked)?;
-            } else {
-                copy_file(&file, &target)?;
             }
+            eprintln!("moved {} to new path.", file.display());
         }
         Ok(())
     })();
 
     if let Err(e) = result {
-        let _ = fs::remove_dir_all(&path);
-        eprintln!("something went wrong during the move — I've cleaned up, nothing was changed");
-        return Err(e);
+        let deletion_note = fs::remove_dir_all(&path)
+            .err()
+            .map(|e| format!(", but i couldn't delete {}: {e}", path.display()));
+        return Err(e).context(format!(
+            "something went wrong during the move - nothing was changed{}",
+            deletion_note.as_deref().unwrap_or(""),
+        ));
     }
 
-    let _ = fs::remove_dir_all(&context.dotfiles_dir);
+    let deletion_note = fs::remove_dir_all(&context.dotfiles_dir).err().map(|e| {
+        format!(
+            ", but i couldn't delete {}: {e}",
+            context.dotfiles_dir.display()
+        )
+    });
+
+    eprintln!(
+        "everything is now settled in {}{}",
+        path.display(),
+        deletion_note.as_deref().unwrap_or("")
+    );
     context.dotfiles_dir = path.clone();
-    eprintln!("everything is now settled in {}", path.display());
-    Ok(())
-}
-
-fn copy_file(from: &Path, to: &Path) -> Result<()> {
-    if let Some(parent) = to.parent() {
-        fs::create_dir_all(parent)?;
-    }
-
-    fs::copy(from, &to)?;
     Ok(())
 }

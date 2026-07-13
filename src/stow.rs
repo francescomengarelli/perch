@@ -1,7 +1,6 @@
-use crate::utils;
+use crate::utils::{self, create_parent_dirs, symlink};
 use anyhow::{Result, bail};
 use std::fs;
-use std::os::unix::fs::symlink;
 use std::path::Path;
 
 pub fn stow(source: &Path, target: &Path) -> Result<()> {
@@ -14,9 +13,7 @@ pub fn stow(source: &Path, target: &Path) -> Result<()> {
             continue;
         }
 
-        if let Some(parent) = target_path.parent() {
-            fs::create_dir_all(parent)?;
-        }
+        create_parent_dirs(&target_path)?;
 
         if target_path.is_symlink() {
             if fs::read_link(&target_path)? == path {
@@ -30,8 +27,8 @@ pub fn stow(source: &Path, target: &Path) -> Result<()> {
             );
         }
 
-        eprintln!("{} is in place", target_path.display());
         symlink(&path, &target_path)?;
+        eprintln!("{} is in place", target_path.display());
     }
     Ok(())
 }

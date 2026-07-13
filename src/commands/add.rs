@@ -1,6 +1,6 @@
 use crate::{
     context,
-    utils::{self, walk_files},
+    utils::{self, create_parent_dirs, symlink, walk_files},
 };
 use std::{fs, path::PathBuf};
 
@@ -48,12 +48,11 @@ pub fn run(context: &context::Context, paths: &[PathBuf], module: &str) -> Resul
                 );
             }
 
-            if let Some(parent) = target.parent() {
-                fs::create_dir_all(parent)?;
-            }
+            create_parent_dirs(&target)?;
 
             fs::rename(&file, &target)?;
-            std::os::unix::fs::symlink(&target, &file)?;
+
+            symlink(&target, &file)?;
 
             eprintln!(
                 "{} is now managed — moved into '{}' and linked back",

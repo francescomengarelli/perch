@@ -1,5 +1,8 @@
 use anyhow::{Context, Result};
-use std::path::{Path, PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 pub fn expand_tilde(path: &Path) -> Result<PathBuf> {
     if let Ok(stripped) = path.strip_prefix("~") {
@@ -30,7 +33,7 @@ pub fn absolutize(path: &Path) -> Result<PathBuf> {
         Ok(stripped)
     } else {
         Ok(std::env::current_dir()
-            .context("I couldn't find the current directory — has it been deleted?")?
+            .with_context(|| "I couldn't find the current directory — has it been deleted?")?
             .join(stripped))
     }
 }
@@ -43,4 +46,31 @@ pub fn walk_files(dir: &Path) -> impl Iterator<Item = Result<PathBuf>> {
             Ok(e) => Some(Ok(e.into_path())),
             Err(e) => Some(Err(e.into())),
         })
+}
+
+pub fn create_parent_dirs(path: &Path) -> Result<()> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .with_context(|| format!("I couldn't create {}", parent.display()))?;
+    }
+
+    Ok(())
+}
+
+pub fn symlink(original: &Path, link: &Path) -> Result<()> {
+    std::os::unix::fs::symlink(original, link).with_context(|| {
+        format!(
+            "I couldn't symlink {} to {}",
+            original.display(),
+            link.display()
+        )
+    })
+}
+
+pub fn copy(from: &Path, to: &Path) -> Result<()> {
+    create_parent_dirs(to)?;
+
+    fs::copy(from, &to)
+        .with_context(|| format!("Failed to copy from {} to {}", from.display(), to.display()))?;
+    Ok(())
 }
