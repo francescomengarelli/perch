@@ -86,13 +86,12 @@ OLD="version = \"$VERSION\""
 NEW="version = \"$BUMPED\""
 sed "/\[package\]/,/^\[.*/s/^$OLD/$NEW/" "$CARGO_PATH" > "$CARGO_TMP_PATH"
 
-CARGO_UPDATE="cargo update"
 
 mv "$CARGO_PATH" "$CARGO_BAK_PATH"
 mv "$CARGO_TMP_PATH" "$CARGO_PATH"
 
 set -ex
-if ! cargo update 2>&1 > /dev/null; then
+if ! cargo update > /dev/null 2>&1; then
     printf "error: cargo update failed"
     mv "$CARGO_BAK_PATH" "$CARGO_PATH"
     exit 1
