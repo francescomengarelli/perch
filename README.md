@@ -81,3 +81,7 @@ perch sync --config ~/dotfiles/common/.config/perch/config.toml
 
 After the first sync, `~/.config/perch/config.toml` is live and
 `perch sync` works without `--config` from then on.
+
+> [!NOTE]
+> Make sure to clone in the directory specified in your `config.toml`, or Perch won't be
+> able to find your dotfiles the first time.
