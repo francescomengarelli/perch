@@ -1,0 +1,105 @@
+#!/bin/sh
+
+if ! REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null); then
+    printf "error: you are outside of the repository\n"
+    exit 1
+fi
+
+CARGO_PATH="$REPO_ROOT/Cargo.toml"
+CARGO_LOCK_PATH="$REPO_ROOT/Cargo.lock"
+
+CARGO_TMP_PATH="$CARGO_PATH.bump.tmp"
+trap 'rm -f "$CARGO_TMP_PATH"' EXIT
+
+USAGE="Usage: bump [major|minor|patch] <message>"
+
+if [ -z "$1" ] || [ -z "$2" ]; then
+    printf "error: missing argument\n%s\n" "$USAGE"
+    exit 1
+fi
+
+
+BUMP=$1
+MESSAGE=$2
+
+case "$BUMP" in
+    major) ;;
+    minor) ;;
+    patch) ;;
+    *) 
+        printf "error: invalid target %s\n%s\n" "$BUMP" "$USAGE"
+        exit 1
+        ;;
+esac
+
+STATUS=$(git status "$REPO_ROOT" --porcelain)
+
+if [ -n "$STATUS" ]; then
+    printf "error: commit all changes before bumping the version\n"
+    exit 1
+fi
+
+VERSION_LN=$(sed -n '/^\[package\]/{:a; n; /^[[:space:]]*version[[:space:]]*=/{p;q}; /\[/q; ba}' "$CARGO_PATH")
+VERSION=$(echo "$VERSION_LN" | sed  's/.*"\([^"]*\)"/\1/')
+
+if [ -z "$VERSION" ]; then
+    printf "error: version not found in Cargo.toml"
+    exit 1
+fi
+
+get_number() {
+    echo "$VERSION" | cut -d'.' -f$1
+}
+
+MAJOR=$(get_number 1)
+MINOR=$(get_number 2)
+PATCH=$(get_number 3)
+
+if [ -z "$MAJOR" ] || [ -z "$MINOR" ] || [ -z "$PATCH" ]; then
+    printf "error: invalid version string in Cargo.toml"
+    exit 1
+fi
+
+case "$BUMP" in
+    major)
+        MAJOR=$(( MAJOR + 1 ))
+        MINOR=0
+        PATCH=0
+        ;;
+    minor)
+        MINOR=$(( MINOR + 1 ))
+        PATCH=0
+        ;;
+    patch)
+        PATCH=$(( PATCH + 1 ))
+        ;;
+esac
+
+BUMPED="${MAJOR}.${MINOR}.${PATCH}"
+
+printf "bumping from $VERSION to $BUMPED\n"
+
+OLD="version = \"$VERSION\""
+NEW="version = \"$BUMPED\""
+sed "/\[package\]/,/^\[.*/s/^$OLD/$NEW/" "$CARGO_PATH" > "$CARGO_TMP_PATH"
+
+CARGO_UPDATE="cargo update"
+
+
+set -ex
+if ! cargo update; then
+    printf "error: cargo update failed"
+    exit 1
+fi
+set +ex
+
+mv "$CARGO_TMP_PATH" "$CARGO_PATH"
+
+set -ex
+git add "$CARGO_PATH" "$CARGO_LOCK_PATH"
+
+git commit -m "chore: bump to v$BUMPED"
+
+git tag "v$BUMPED" -m "$MESSAGE"
+set +ex
+
