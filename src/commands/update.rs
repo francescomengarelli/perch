@@ -2,6 +2,7 @@ use crate::{
     commands,
     config::{self},
     context,
+    utils::expand_tilde,
 };
 use anyhow::{Context, Result};
 use std::{path::PathBuf, process::Command};
@@ -36,10 +37,11 @@ pub fn run(context: &mut context::Context) -> Result<()> {
 
     let new_dotfiles_dir = new_config_dotfiles_dir.and_then(|c| c.dotfiles_dir);
     if let Some(new_dir) = new_dotfiles_dir {
-        let target_path = PathBuf::from(new_dir);
+        let target_path = expand_tilde(&PathBuf::from(new_dir))?;
         if target_path != context.dotfiles_dir {
             eprintln!(
-                "your config points to a new dotfiles directory — moving everything over to {} now",
+                "your config points to a new dotfiles directory — moving everything over from {} to {} now",
+                context.dotfiles_dir.display(),
                 target_path.display()
             );
             commands::move_dir::run(context, &target_path)?;
