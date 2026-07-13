@@ -1,5 +1,5 @@
 use crate::utils::{self, create_parent_dirs, symlink};
-use anyhow::{Result, bail};
+use anyhow::Result;
 use std::fs;
 use std::path::Path;
 
@@ -15,17 +15,12 @@ pub fn stow(source: &Path, target: &Path, verbose: bool) -> Result<()> {
 
         create_parent_dirs(&target_path)?;
 
-        if target_path.is_symlink() {
-            if fs::read_link(&target_path)? == path {
+        if target_path.is_symlink() || target_path.exists() {
+            if is_our_symlink(&target_path, &path) {
                 continue;
             }
             fs::remove_file(&target_path)?;
-        } else if target_path.exists() {
-            bail!(
-                "{} is already there and it's not mine — skipping would leave things broken, so I'm stopping here",
-                target_path.display()
-            );
-        }
+        };
 
         symlink(&path, &target_path)?;
         if verbose {
@@ -33,4 +28,9 @@ pub fn stow(source: &Path, target: &Path, verbose: bool) -> Result<()> {
         }
     }
     Ok(())
+}
+
+// utils.rs or stow.rs
+pub fn is_our_symlink(target: &Path, source: &Path) -> bool {
+    target.is_symlink() && fs::read_link(target).ok().as_deref() == Some(source)
 }
