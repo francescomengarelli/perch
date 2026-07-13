@@ -15,7 +15,7 @@ pub fn stow(source: &Path, target: &Path) -> Result<()> {
             continue;
         }
 
-        if let Some(parent) = relative.parent() {
+        if let Some(parent) = target_path.parent() {
             fs::create_dir_all(parent)?;
         }
 
