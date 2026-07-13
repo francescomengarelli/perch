@@ -42,7 +42,10 @@ pub fn run(context: &context::Context, paths: &[PathBuf], module: &str) -> Resul
             }
 
             if target.exists() {
-                bail!("conflict: file already exists at {}", target.display());
+                bail!(
+                    "{} is already in my dotfiles directory — not overwriting it",
+                    target.display()
+                );
             }
 
             if let Some(parent) = target.parent() {
@@ -52,7 +55,11 @@ pub fn run(context: &context::Context, paths: &[PathBuf], module: &str) -> Resul
             fs::rename(&file, &target)?;
             std::os::unix::fs::symlink(&target, &file)?;
 
-            println!("symlinked {} to {}", file.display(), target.display());
+            eprintln!(
+                "{} is now managed — moved into '{}' and linked back",
+                file.display(),
+                module
+            );
         }
     }
 

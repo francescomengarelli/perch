@@ -18,7 +18,10 @@ fn main() -> Result<()> {
     let config_path = if let Some(path) = cli.config.map(|f| expand_tilde(&f)) {
         let path = path?;
         if !path.exists() {
-            anyhow::bail!("config file not found: {}", path.display());
+            anyhow::bail!(
+                "I couldn't find a config file at {} - does it exist?",
+                path.display()
+            );
         }
         Some(path)
     } else {

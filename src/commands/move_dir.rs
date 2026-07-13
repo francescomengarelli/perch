@@ -29,9 +29,10 @@ pub fn run(context: &mut context::Context, path: &Path) -> Result<()> {
                     Ok(symlink_target) => {
                         if symlink_target != file {
                             bail!(
-                                "symlink points somewhere else! {} -> {}",
+                                "{} is pointing somewhere unexpected — {} instead of {}",
                                 symlinked.display(),
-                                symlink_target.display()
+                                symlink_target.display(),
+                                file.display()
                             );
                         }
                     }
@@ -44,7 +45,11 @@ pub fn run(context: &mut context::Context, path: &Path) -> Result<()> {
                         copy_file(&file, &target)?;
                         continue;
                     }
-                    Err(e) => bail!("Error reading symlink {}: {}", symlinked.display(), e),
+                    Err(e) => bail!(
+                        "I tried to read the symlink at {} — {}",
+                        symlinked.display(),
+                        e
+                    ),
                 }
 
                 copy_file(&file, &target)?;
@@ -59,12 +64,13 @@ pub fn run(context: &mut context::Context, path: &Path) -> Result<()> {
 
     if let Err(e) = result {
         let _ = fs::remove_dir_all(&path);
+        eprintln!("something went wrong during the move — I've cleaned up, nothing was changed");
         return Err(e);
     }
 
     let _ = fs::remove_dir_all(&context.dotfiles_dir);
-    context.dotfiles_dir = path;
-
+    context.dotfiles_dir = path.clone();
+    eprintln!("everything is now settled in {}", path.display());
     Ok(())
 }
 

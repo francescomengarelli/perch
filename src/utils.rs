@@ -20,7 +20,7 @@ pub fn unexpand_tilde(path: &Path) -> Result<PathBuf> {
 }
 
 pub fn get_home_dir() -> Result<PathBuf> {
-    dirs::home_dir().context("Could not determine home directory")
+    dirs::home_dir().context("I couldn't find your home directory — is $HOME set?")
 }
 
 pub fn absolutize(path: &Path) -> Result<PathBuf> {
@@ -29,7 +29,9 @@ pub fn absolutize(path: &Path) -> Result<PathBuf> {
     if stripped.is_absolute() {
         Ok(stripped)
     } else {
-        Ok(std::env::current_dir()?.join(stripped))
+        Ok(std::env::current_dir()
+            .context("I couldn't find the current directory — has it been deleted?")?
+            .join(stripped))
     }
 }
 

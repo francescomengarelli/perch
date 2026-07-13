@@ -1,9 +1,8 @@
+use crate::utils;
 use anyhow::{Result, bail};
 use std::fs;
 use std::os::unix::fs::symlink;
 use std::path::Path;
-
-use crate::utils;
 
 pub fn stow(source: &Path, target: &Path) -> Result<()> {
     for entry in utils::walk_files(source) {
@@ -23,15 +22,16 @@ pub fn stow(source: &Path, target: &Path) -> Result<()> {
             if fs::read_link(&target_path)? == path {
                 continue;
             }
-
             fs::remove_file(&target_path)?;
         } else if target_path.exists() {
-            bail!("conflict: real file exists at {}", target_path.display());
+            bail!(
+                "{} is already there and it's not mine — skipping would leave things broken, so I'm stopping here",
+                target_path.display()
+            );
         }
 
-        println!("linking {}", target_path.display());
+        eprintln!("{} is in place", target_path.display());
         symlink(&path, &target_path)?;
     }
-
     Ok(())
 }

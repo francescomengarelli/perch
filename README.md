@@ -4,7 +4,7 @@
 
 # perch
 
-A minimal dotfiles manager for macOS and Linux.
+your dotfiles, settled into place.
 
 ## Installation
 
@@ -23,12 +23,12 @@ cargo install --root ~/.local --path .
 ## How it works
 
 Perch manages dotfiles by stowing modules from your dotfiles repo into your
-home directory. A module is a folder - inside it get symlinked to the
+home directory. A module is a folder — its contents get symlinked to the
 same relative path under `~`.
 
 `~/dotfiles/macos/.config/nvim/init.lua` → `~/.config/nvim/init.lua`, but only on macOS.
 
-Without a config file, Perch runs with hardcoded defaults:
+Without a config file, Perch runs with sensible defaults:
 
 | Module   | Stowed when |
 | -------- | ----------- |
@@ -44,10 +44,10 @@ these defaults are replaced entirely — only the modules you define are stowed.
 | Command                 | What it does                                         |
 | ----------------------- | ---------------------------------------------------- |
 | `perch sync`            | Symlink all active modules to their target locations |
-| `perch update`          | Pull latest changes from the remote, then re-sync    |
+| `perch update`          | Pull latest changes from remote, then re-sync        |
 | `perch status`          | Run `git status` in the dotfiles repo                |
 | `perch add <m> <path>`  | Move files into a module and symlink them back       |
-| `perch move-dir <path>` | Move dotfiles dir into a new dir                     |
+| `perch move-dir <path>` | Move the dotfiles directory to a new location        |
 
 ## Configuration
 
