@@ -23,10 +23,11 @@ pub enum Commands {
     /// to their target locations.
     Sync,
 
-    /// Pull the latest changes from the remote and re-sync all symlinks.
+    /// Pulls the latest changes from the remote repository and re-syncs all symlinks.
     ///
-    /// Runs `git pull` in the dotfiles repo, then re-applies symlinks
-    /// via `sync`.
+    /// Runs `git pull` in the dotfiles repository, then re-applies all symlinks. If the newly
+    /// loaded `config.toml` specifies a `dotfiles_dir` that differs from the current location,
+    /// it will automatically migrate the dotfiles directory to the new path.
     Update,
 
     /// Show the git status of the dotfiles repository.
