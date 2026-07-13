@@ -1,3 +1,7 @@
+![GitHub Release](https://img.shields.io/github/v/release/francescomengarelli/dot?display_name=release&style=flat-square&color=blue)
+![License](https://img.shields.io/github/license/francescomengarelli/dot?style=flat-square&color=green)
+![CI](https://img.shields.io/github/actions/workflow/status/francescomengarelli/dot/release.yml?style=flat-square)
+
 # dot
 
 A minimal dotfiles manager for macOS and Linux.
