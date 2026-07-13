@@ -8,7 +8,7 @@ pub fn run(context: &context::Context) -> Result<()> {
     let status = Command::new("git")
         .args(["-C", dotfiles.to_str().unwrap(), "status"])
         .status()
-        .context("I tried to run git status but something went wrong")?;
+        .context("i tried to run git status but something went wrong")?;
     if !status.success() {
         anyhow::bail!("git status didn't go well — check the output above");
     }

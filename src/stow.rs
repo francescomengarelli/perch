@@ -3,7 +3,7 @@ use anyhow::{Result, bail};
 use std::fs;
 use std::path::Path;
 
-pub fn stow(source: &Path, target: &Path) -> Result<()> {
+pub fn stow(source: &Path, target: &Path, verbose: bool) -> Result<()> {
     for entry in utils::walk_files(source) {
         let path = entry?;
         let relative = path.strip_prefix(source)?;
@@ -28,7 +28,9 @@ pub fn stow(source: &Path, target: &Path) -> Result<()> {
         }
 
         symlink(&path, &target_path)?;
-        eprintln!("{} is in place", target_path.display());
+        if verbose {
+            eprintln!("{} is in place", target_path.display());
+        }
     }
     Ok(())
 }

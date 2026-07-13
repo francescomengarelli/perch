@@ -9,10 +9,15 @@ pub struct Context {
     pub dotfiles_dir: PathBuf,
     pub filtered_modules: Vec<String>,
     pub all_modules: Vec<String>,
+    pub verbose: u8,
 }
 
 impl Context {
-    pub fn new(config: Option<&Config>) -> anyhow::Result<Self> {
+    pub fn new(config: Option<&Config>, verbose: u8) -> anyhow::Result<Self> {
+        if !config.is_some() && verbose > 0 {
+            eprintln!("config not found. using sensible defaults")
+        }
+
         let mut dotfiles_dir = if let Some(config) = &config {
             config
                 .dotfiles_dir
@@ -45,6 +50,7 @@ impl Context {
         dotfiles_dir = absolutize(&dotfiles_dir)?;
 
         Ok(Context {
+            verbose,
             dotfiles_dir,
             filtered_modules: modules
                 .iter()
@@ -53,6 +59,12 @@ impl Context {
                 .collect(),
             all_modules: modules.into_iter().map(|m| m.name).collect(),
         })
+    }
+
+    pub fn log(&self, level: u8, msg: &str) {
+        if self.verbose >= level {
+            eprintln!("{}", msg);
+        }
     }
 }
 

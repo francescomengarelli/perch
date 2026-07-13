@@ -13,7 +13,7 @@ pub fn run(context: &mut context::Context, path: &Path) -> Result<()> {
     let path = utils::absolutize(path)?;
 
     if path == context.dotfiles_dir {
-        eprintln!("Nothing to move. dotfiles already at {}", path.display());
+        eprintln!("nothing to move. dotfiles already at {}", path.display());
         return Ok(());
     }
 
@@ -27,7 +27,7 @@ pub fn run(context: &mut context::Context, path: &Path) -> Result<()> {
             let mut components = relative_to_dir.components();
             let first_str = components
                 .next()
-                .expect("Path must have at least one component. (should be at LEAST ~/home/user/)")
+                .expect("path must have at least one component. (should be at LEAST ~/home/user/)")
                 .as_os_str();
 
             let rest: PathBuf = components.collect();
@@ -44,7 +44,7 @@ pub fn run(context: &mut context::Context, path: &Path) -> Result<()> {
                         std::io::ErrorKind::NotFound | std::io::ErrorKind::InvalidInput
                     ) {
                         bail!(
-                            "I tried to read the symlink at {} — {}",
+                            "i couldn't read the symlink at {} — {}",
                             symlinked.display(),
                             e
                         )
@@ -59,14 +59,14 @@ pub fn run(context: &mut context::Context, path: &Path) -> Result<()> {
                         .with_context(|| format!("I couldn't to remove {}", symlinked.display()))?;
                     std::os::unix::fs::symlink(&target, &symlinked).with_context(|| {
                         format!(
-                            "I couldn't symlink from {} to {}",
+                            "i couldn't symlink from {} to {}",
                             target.display(),
                             symlinked.display()
                         )
                     })?;
                 }
             }
-            eprintln!("moved {} to new path.", file.display());
+            context.log(2, &format!("moved {} to new path", file.display()));
         }
         Ok(())
     })();

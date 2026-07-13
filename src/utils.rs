@@ -23,7 +23,7 @@ pub fn unexpand_tilde(path: &Path) -> Result<PathBuf> {
 }
 
 pub fn get_home_dir() -> Result<PathBuf> {
-    dirs::home_dir().context("I couldn't find your home directory — is $HOME set?")
+    dirs::home_dir().context("i couldn't find your home directory — is $HOME set?")
 }
 
 pub fn absolutize(path: &Path) -> Result<PathBuf> {
@@ -33,7 +33,7 @@ pub fn absolutize(path: &Path) -> Result<PathBuf> {
         Ok(stripped)
     } else {
         Ok(std::env::current_dir()
-            .with_context(|| "I couldn't find the current directory — has it been deleted?")?
+            .with_context(|| "i couldn't find the current directory — has it been deleted?")?
             .join(stripped))
     }
 }
@@ -51,7 +51,7 @@ pub fn walk_files(dir: &Path) -> impl Iterator<Item = Result<PathBuf>> {
 pub fn create_parent_dirs(path: &Path) -> Result<()> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
-            .with_context(|| format!("I couldn't create {}", parent.display()))?;
+            .with_context(|| format!("i couldn't create {}", parent.display()))?;
     }
 
     Ok(())
@@ -60,7 +60,7 @@ pub fn create_parent_dirs(path: &Path) -> Result<()> {
 pub fn symlink(original: &Path, link: &Path) -> Result<()> {
     std::os::unix::fs::symlink(original, link).with_context(|| {
         format!(
-            "I couldn't symlink {} to {}",
+            "i couldn't symlink {} to {}",
             original.display(),
             link.display()
         )
@@ -70,7 +70,12 @@ pub fn symlink(original: &Path, link: &Path) -> Result<()> {
 pub fn copy(from: &Path, to: &Path) -> Result<()> {
     create_parent_dirs(to)?;
 
-    fs::copy(from, &to)
-        .with_context(|| format!("Failed to copy from {} to {}", from.display(), to.display()))?;
+    fs::copy(from, &to).with_context(|| {
+        format!(
+            "i couldn't copy from {} to {}",
+            from.display(),
+            to.display()
+        )
+    })?;
     Ok(())
 }

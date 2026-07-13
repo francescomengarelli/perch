@@ -7,6 +7,9 @@ pub struct Cli {
     /// Path to a custom config file (default: ~/.config/perch/config.toml)
     #[arg(long, global = true)]
     pub config: Option<PathBuf>,
+    /// Increase output verbosity (-v, -vv, -vvv)
+    #[arg(short, global = true, long, action = clap::ArgAction::Count)]
+    pub verbose: u8,
     #[command(subcommand)]
     pub command: Commands,
 }

@@ -13,7 +13,7 @@ pub fn run(context: &mut context::Context) -> Result<()> {
         .arg(&context.dotfiles_dir)
         .arg("pull")
         .status()
-        .context("I tried to run git pull but something went wrong")?;
+        .context("i tried to run git pull but something went wrong")?;
 
     if !status.success() {
         anyhow::bail!("git pull didn't go well — check the output above");
@@ -28,7 +28,7 @@ pub fn run(context: &mut context::Context) -> Result<()> {
 
             if let Some(config_path) = config_path.exists().then_some(config_path) {
                 let loaded = config::load(&config_path)
-                    .context("I found a config in your dotfiles directory but couldn't read it")?;
+                    .context("i found a config in your dotfiles directory but couldn't read it")?;
                 return Ok(Some(loaded));
             }
         }
@@ -47,20 +47,14 @@ pub fn run(context: &mut context::Context) -> Result<()> {
                 target_path.display()
             );
             commands::move_dir::run(context, &target_path)?;
+            String::from(", dotfiles dir moved")
+        } else {
+            String::from("")
         }
-        String::from(format!(
-            " and moved your dotfiles to {}",
-            target_path.display()
-        ))
     } else {
         String::from("")
     };
 
-    eprintln!(
-        "i completed the update. synced {} modules{}",
-        context.filtered_modules.len(),
-        move_note
-    );
-
+    eprintln!("update completed. dotfiles synced{}", move_note);
     Ok(())
 }

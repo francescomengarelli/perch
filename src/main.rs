@@ -19,7 +19,7 @@ fn main() -> Result<()> {
         let path = path?;
         if !path.exists() {
             anyhow::bail!(
-                "I couldn't find a config file at {} - does it exist?",
+                "i couldn't find a config file at {} - does it exist?",
                 path.display()
             );
         }
@@ -30,7 +30,7 @@ fn main() -> Result<()> {
     };
 
     let mut config = config_path.as_ref().map(|p| config::load(&p)).transpose()?;
-    let mut context = Context::new(config.as_ref())?;
+    let mut context = Context::new(config.as_ref(), cli.verbose)?;
 
     match cli.command {
         Commands::Sync => commands::sync::run(&context)?,

@@ -1,6 +1,6 @@
 use crate::{
     context,
-    utils::{self, create_parent_dirs, symlink, walk_files},
+    utils::{self, create_parent_dirs, symlink, unexpand_tilde, walk_files},
 };
 use std::{fs, path::PathBuf};
 
@@ -10,7 +10,9 @@ pub fn run(context: &context::Context, paths: &[PathBuf], module: &str) -> Resul
     let home = utils::get_home_dir()?;
     let target_dir = context.dotfiles_dir.join(module);
 
+    let mut count = 0;
     for path in paths {
+        context.log(1, &format!("adding {}...", path.display()));
         for file in walk_files(path) {
             let file = file?.canonicalize()?;
             // A file being added is either:
@@ -54,13 +56,23 @@ pub fn run(context: &context::Context, paths: &[PathBuf], module: &str) -> Resul
 
             symlink(&target, &file)?;
 
-            eprintln!(
-                "{} is now managed — moved into '{}' and linked back",
-                file.display(),
-                module
+            context.log(
+                2,
+                &format!(
+                    "{} is now managed — moved into '{}' and linked back",
+                    file.display(),
+                    module
+                ),
             );
+            count += 1;
         }
     }
+
+    eprintln!(
+        "{} files added to {} and symlinked them back",
+        count,
+        unexpand_tilde(&context.dotfiles_dir)?.display()
+    );
 
     Ok(())
 }
