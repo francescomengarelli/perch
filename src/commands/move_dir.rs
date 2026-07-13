@@ -23,14 +23,28 @@ pub fn run(context: &mut context::Context, path: &Path) -> Result<()> {
             {
                 let symlinked = utils::get_home_dir()?.join(rest);
 
-                let symlink_target = fs::read_link(&symlinked)?;
+                let symlink_target = fs::read_link(&symlinked);
 
-                if symlink_target != file {
-                    bail!(
-                        "symlink points somewhere else! {} -> {}",
-                        symlinked.display(),
-                        symlink_target.display()
-                    );
+                match symlink_target {
+                    Ok(symlink_target) => {
+                        if symlink_target != file {
+                            bail!(
+                                "symlink points somewhere else! {} -> {}",
+                                symlinked.display(),
+                                symlink_target.display()
+                            );
+                        }
+                    }
+                    Err(e)
+                        if matches!(
+                            e.kind(),
+                            std::io::ErrorKind::NotFound | std::io::ErrorKind::InvalidInput
+                        ) =>
+                    {
+                        copy_file(&file, &target)?;
+                        continue;
+                    }
+                    Err(e) => bail!("Error reading symlink {}: {}", symlinked.display(), e),
                 }
 
                 copy_file(&file, &target)?;
