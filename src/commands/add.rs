@@ -13,6 +13,20 @@ pub fn run(context: &context::Context, paths: &[PathBuf], module: &str) -> Resul
     for path in paths {
         for file in walk_files(path) {
             let file = file?.canonicalize()?;
+            // A file being added is either:
+            //
+            // 1. Already inside the dotfiles repo (e.g. the user passed an absolute path
+            //    that happens to live under ~/dotfiles/some_module/...).
+            //    In this case, strip the dotfiles_dir prefix — which leaves
+            //    "some_module/.config/foo" — then skip the first component (the module
+            //    name) to get the home-relative path ".config/foo".
+            //
+            // 2. Somewhere under $HOME (the normal case: a live config file the user
+            //    wants to adopt). Strip $HOME to get the home-relative path ".config/foo".
+            //
+            // Either way, `from_home` ends up as the path relative to $HOME,
+            // which we then re-root under the target module dir to get the
+            // final destination inside the dotfiles repo.
             let from_home: PathBuf = if file.starts_with(&context.dotfiles_dir) {
                 file.strip_prefix(&context.dotfiles_dir)?
                     .components()
