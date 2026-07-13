@@ -31,7 +31,7 @@ fn main() -> Result<()> {
 
     match cli.command {
         Commands::Sync => commands::sync::run(&context)?,
-        Commands::Update => commands::update::run(&context)?,
+        Commands::Update => commands::update::run(&mut context)?,
         Commands::Status => commands::status::run(&context)?,
         Commands::Add { path, module } => commands::add::run(&context, &path, &module)?,
         Commands::MoveDir { path } => commands::move_dir::run(&mut context, &path)?,
