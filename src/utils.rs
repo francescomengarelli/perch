@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use ignore::WalkBuilder;
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -38,6 +39,29 @@ pub fn absolutize(path: &Path) -> Result<PathBuf> {
     }
 }
 
+pub fn paths_equal(a: &Path, b: &Path) -> bool {
+    // Canonicalize only the stored paths, not the symlink targets themselves
+    // (canonicalize follows symlinks, so we normalize lexically instead)
+    let a = normalize(a);
+    let b = normalize(b);
+    a == b
+}
+
+pub fn normalize(p: &Path) -> std::path::PathBuf {
+    // Collapse . and .. lexically without hitting the filesystem
+    let mut out = std::path::PathBuf::new();
+    for component in p.components() {
+        match component {
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => {
+                out.pop();
+            }
+            c => out.push(c),
+        }
+    }
+    out
+}
+
 pub fn walk_files(dir: &Path) -> impl Iterator<Item = Result<PathBuf>> {
     walkdir::WalkDir::new(dir)
         .into_iter()
@@ -46,6 +70,27 @@ pub fn walk_files(dir: &Path) -> impl Iterator<Item = Result<PathBuf>> {
             Ok(e) => Some(Ok(e.into_path())),
             Err(e) => Some(Err(e.into())),
         })
+}
+
+pub fn walk_dotfiles(root: &Path, module: &Path) -> impl Iterator<Item = Result<PathBuf>> {
+    let mut builder = WalkBuilder::new(module);
+
+    builder
+        .add_custom_ignore_filename(".perchignore")
+        .git_ignore(false)
+        .git_global(false)
+        .git_exclude(false);
+
+    let root_ignore = root.join(".perchignore");
+    if root_ignore.exists() {
+        builder.add_ignore(&root_ignore);
+    }
+
+    builder.build().filter_map(|e| match e {
+        Ok(e) if e.file_type().map(|t| t.is_dir()).unwrap_or(false) => None,
+        Ok(e) => Some(Ok(e.into_path())),
+        Err(e) => Some(Err(e.into())),
+    })
 }
 
 pub fn create_parent_dirs(path: &Path) -> Result<()> {
