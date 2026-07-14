@@ -1,10 +1,10 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[derive(Deserialize, Serialize)]
 pub struct Config {
-    pub dotfiles_dir: Option<String>,
+    pub dotfiles_dir: Option<PathBuf>,
     #[serde[default]]
     pub module: Vec<Module>,
 }

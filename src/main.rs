@@ -42,11 +42,7 @@ fn main() -> Result<()> {
 
     // FIXME: clean this up
     if let (Some(config), Some(config_path)) = (&mut config, &config_path) {
-        config.dotfiles_dir = Some(
-            utils::unexpand_tilde(&context.dotfiles_dir)?
-                .to_string_lossy()
-                .to_string(),
-        );
+        config.dotfiles_dir = Some(utils::unexpand_tilde(&context.dotfiles_dir)?);
         config::save(&config, &config_path)?;
     }
 
