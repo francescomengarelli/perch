@@ -2,7 +2,6 @@ mod cli;
 mod commands;
 mod config;
 mod context;
-mod stow;
 mod utils;
 
 use crate::{context::Context, utils::expand_tilde};
