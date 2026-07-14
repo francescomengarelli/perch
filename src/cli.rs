@@ -47,4 +47,7 @@ pub enum Commands {
         /// The new path for the dotfiles directory.
         path: PathBuf,
     },
+
+    /// Check for latest version and upgrade if needed
+    SelfUpgrade,
 }

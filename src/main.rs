@@ -38,6 +38,7 @@ fn main() -> Result<()> {
         Commands::Status => commands::status::run(&context)?,
         Commands::Add { path, module } => commands::add::run(&context, &path, &module)?,
         Commands::MoveDir { path } => commands::move_dir::run(&mut context, &path)?,
+        Commands::SelfUpgrade => commands::self_upgrade::run()?,
     }
 
     // FIXME: clean this up
