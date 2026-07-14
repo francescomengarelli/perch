@@ -48,6 +48,7 @@ these defaults are replaced entirely — only the modules you define are stowed.
 | `perch status`          | Run `git status` in the dotfiles repo                |
 | `perch add <m> <path>`  | Move files into a module and symlink them back       |
 | `perch move-dir <path>` | Move the dotfiles directory to a new location        |
+| `perch self-upgrade`    | Feth latest perch release and update to it           |
 
 ## Configuration
 
