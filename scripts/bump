@@ -23,7 +23,13 @@ pusage() {
 }
 
 run() {
-    echo "$*"
+    for arg in "$@"; do
+        case "$arg" in
+            *\ *) printf '"%s" ' "$arg" ;;
+            *)    printf '%s ' "$arg" ;;
+        esac
+    done
+    printf '\n'
     "$@" >&2
 }
 
