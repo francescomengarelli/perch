@@ -11,6 +11,8 @@ pub fn run(context: &context::Context, paths: &[PathBuf], module: &str) -> Resul
     let target_dir = context.dotfiles_dir.join(module);
 
     let mut count = 0;
+    let mut conflict_count = 0;
+    let mut to_add: Vec<(PathBuf, PathBuf)> = vec![];
     for path in paths {
         context.log(1, &format!("adding {}...", path.display()));
         for file in walk_files(path) {
@@ -44,28 +46,40 @@ pub fn run(context: &context::Context, paths: &[PathBuf], module: &str) -> Resul
             }
 
             if target.exists() {
-                bail!(
+                eprintln!(
                     "{} is already in my dotfiles directory — not overwriting it",
                     target.display()
                 );
+                conflict_count += 1;
+            } else {
+                to_add.push((file, target));
+                count += 1;
             }
-
-            create_parent_dirs(&target)?;
-
-            fs::rename(&file, &target)?;
-
-            symlink(&target, &file)?;
-
-            context.log(
-                2,
-                &format!(
-                    "{} is now managed — moved into '{}' and linked back",
-                    file.display(),
-                    module
-                ),
-            );
-            count += 1;
         }
+    }
+
+    if conflict_count > 0 {
+        bail!(
+            "{} conflict found. resolve before adding them",
+            conflict_count
+        );
+    }
+
+    for (file, target) in to_add {
+        create_parent_dirs(&target)?;
+
+        fs::rename(&file, &target)?;
+
+        symlink(&target, &file)?;
+
+        context.log(
+            2,
+            &format!(
+                "{} is now managed — moved into '{}' and linked back",
+                file.display(),
+                module
+            ),
+        );
     }
 
     eprintln!(
