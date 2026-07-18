@@ -86,7 +86,16 @@ if [ -n "$STATUS" ]; then
     exit 1
 fi
 
-VERSION_LN=$(sed -n '/^\[package\]/{:a; n; /^[[:space:]]*version[[:space:]]*=/{p;q}; /\[/q; ba}' "$CARGO_PATH")
+VERSION_LN=$(sed -n '/^\[package\]/{
+:a
+n
+/^[[:space:]]*version[[:space:]]*=/{
+p
+q
+}
+/\[/q
+ba
+}' "$CARGO_PATH")
 VERSION=$(echo "$VERSION_LN" | sed  's/.*"\([^"]*\)"/\1/')
 
 if [ -z "$VERSION" ]; then
