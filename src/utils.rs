@@ -76,6 +76,7 @@ pub fn walk_dotfiles(root: &Path, module: &Path) -> impl Iterator<Item = Result<
     let mut builder = WalkBuilder::new(module);
 
     builder
+        .hidden(false)
         .add_custom_ignore_filename(".perchignore")
         .git_ignore(false)
         .git_global(false)
