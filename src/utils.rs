@@ -72,6 +72,25 @@ pub fn walk_files(dir: &Path) -> impl Iterator<Item = Result<PathBuf>> {
         })
 }
 
+/// Walk a source tree the way `add` does: honor `.perchignore` files found
+/// inside it, keep hidden files, ignore git's own ignore files.
+pub fn walk_source_files(dir: &Path) -> impl Iterator<Item = Result<PathBuf>> {
+    let mut builder = WalkBuilder::new(dir);
+
+    builder
+        .hidden(false)
+        .add_custom_ignore_filename(".perchignore")
+        .git_ignore(false)
+        .git_global(false)
+        .git_exclude(false);
+
+    builder.build().filter_map(|e| match e {
+        Ok(e) if e.file_type().map(|t| t.is_dir()).unwrap_or(false) => None,
+        Ok(e) => Some(Ok(e.into_path())),
+        Err(e) => Some(Err(e.into())),
+    })
+}
+
 pub fn walk_dotfiles(root: &Path, module: &Path) -> impl Iterator<Item = Result<PathBuf>> {
     let mut builder = WalkBuilder::new(module);
 

@@ -1,51 +1,75 @@
 use crate::{
     context,
-    utils::{self, create_parent_dirs, symlink, unexpand_tilde, walk_files},
+    utils::{self, create_parent_dirs, symlink, unexpand_tilde, walk_source_files},
 };
-use std::{fs, path::PathBuf};
+use std::{collections::HashSet, fs, path::PathBuf};
 
-use anyhow::{Result, bail};
+use anyhow::{Context as _, Result, bail};
 
 pub fn run(context: &context::Context, paths: &[PathBuf], module: &str) -> Result<()> {
     let home = utils::get_home_dir()?;
+    // Canonicalized files live under the real (symlink-resolved) home — e.g.
+    // /private/var on macOS — so resolve $HOME the same way before stripping.
+    let home = fs::canonicalize(&home).unwrap_or(home);
     let target_dir = context.dotfiles_dir.join(module);
+    let dotfiles_dir =
+        fs::canonicalize(&context.dotfiles_dir).unwrap_or_else(|_| context.dotfiles_dir.clone());
 
     let mut count = 0;
     let mut conflict_count = 0;
+    let mut seen: HashSet<PathBuf> = HashSet::new();
     let mut to_add: Vec<(PathBuf, PathBuf)> = vec![];
     for path in paths {
         context.log(1, &format!("adding {}...", path.display()));
-        for file in walk_files(path) {
-            let file = file?.canonicalize()?;
-            // A file being added is either:
-            //
-            // 1. Already inside the dotfiles repo (e.g. the user passed an absolute path
-            //    that happens to live under ~/dotfiles/some_module/...).
-            //    In this case, strip the dotfiles_dir prefix — which leaves
-            //    "some_module/.config/foo" — then skip the first component (the module
-            //    name) to get the home-relative path ".config/foo".
-            //
-            // 2. Somewhere under $HOME (the normal case: a live config file the user
-            //    wants to adopt). Strip $HOME to get the home-relative path ".config/foo".
-            //
-            // Either way, `from_home` ends up as the path relative to $HOME,
-            // which we then re-root under the target module dir to get the
-            // final destination inside the dotfiles repo.
-            let from_home: PathBuf = if file.starts_with(&context.dotfiles_dir) {
-                file.strip_prefix(&context.dotfiles_dir)?
-                    .components()
-                    .skip(1)
-                    .collect()
-            } else {
-                file.strip_prefix(&home)?.to_path_buf()
-            };
-            let target = target_dir.join(&from_home);
+        for entry in walk_source_files(path) {
+            let entry = entry.with_context(|| format!("i couldn't walk {}", path.display()))?;
+            let entry_meta = fs::symlink_metadata(&entry)
+                .with_context(|| format!("i couldn't read {}", entry.display()))?;
 
-            if target == file {
+            // Resolve each entry to the real file it points at. A broken
+            // symlink has nothing to move — skip it instead of failing the
+            // whole run.
+            let file = match entry.canonicalize() {
+                Ok(file) => file,
+                Err(err) if entry_meta.file_type().is_symlink() => {
+                    eprintln!("skipping broken symlink {} ({err})", entry.display());
+                    continue;
+                }
+                Err(err) => {
+                    return Err(err)
+                        .with_context(|| format!("i couldn't resolve {}", entry.display()));
+                }
+            };
+
+            // A file already inside the dotfiles repo is managed — never move
+            // it between modules from here, just leave it alone.
+            if file.starts_with(&dotfiles_dir) {
+                context.log(
+                    2,
+                    &format!("{} is already managed — skipping", file.display()),
+                );
                 continue;
             }
 
-            if target.exists() {
+            // The same real file can be reached more than once through
+            // symlinks — only handle it the first time.
+            if !seen.insert(file.clone()) {
+                continue;
+            }
+
+            // The normal case: a live config file under $HOME the user wants
+            // to adopt. Strip $HOME to get the home-relative path ".config/foo",
+            // then re-root it under the target module dir.
+            let Ok(from_home) = file.strip_prefix(&home) else {
+                eprintln!(
+                    "{} is outside your home directory — skipping",
+                    file.display()
+                );
+                continue;
+            };
+            let target = target_dir.join(from_home);
+
+            if target.symlink_metadata().is_ok() {
                 eprintln!(
                     "{} is already in my dotfiles directory — not overwriting it",
                     target.display()
@@ -68,7 +92,9 @@ pub fn run(context: &context::Context, paths: &[PathBuf], module: &str) -> Resul
     for (file, target) in to_add {
         create_parent_dirs(&target)?;
 
-        fs::rename(&file, &target)?;
+        fs::rename(&file, &target).with_context(|| {
+            format!("i couldn't move {} to {}", file.display(), target.display())
+        })?;
 
         symlink(&target, &file)?;
 
