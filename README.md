@@ -39,6 +39,23 @@ Without a config file, Perch runs with sensible defaults:
 Dotfiles directory defaults to `~/dotfiles`. Once you provide a config file,
 these defaults are replaced entirely — only the modules you define are stowed.
 
+### Ignoring files
+
+Use `.perchignore` to keep files or directories from being symlinked. Its
+patterns use the same syntax as `.gitignore`; Git's own ignore files are not
+used by Perch.
+
+Put one at the root of the dotfiles repository (`~/dotfiles/.perchignore`) for
+rules loaded with every active module. You can also put one anywhere inside a
+module. For example, `~/dotfiles/common/.config/.perchignore` applies only to
+the `.config` directory and its descendants.
+
+```gitignore
+# In ~/dotfiles/common/.config/.perchignore:
+# do not stow local Neovim state
+nvim/.local/
+```
+
 ## Commands
 
 | Command                 | What it does                                         |
