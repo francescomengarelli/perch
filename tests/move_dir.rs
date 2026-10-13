@@ -127,3 +127,28 @@ fn updates_config_that_lives_in_the_repo() {
             .contains("dotfiles_dir = \"~/moved\" # here")
     );
 }
+
+#[test]
+fn updates_config_passed_from_inside_the_repo() {
+    let sb = Sandbox::new();
+    sb.write("dotfiles/common/perch.toml", CONFIG);
+    sb.write("dotfiles/common/.a", "a");
+    sb.perch(&["--config", "dotfiles/common/perch.toml", "sync"])
+        .assert()
+        .success();
+
+    sb.perch(&[
+        "--config",
+        "dotfiles/common/perch.toml",
+        "move-dir",
+        "~/moved",
+    ])
+    .assert()
+    .success();
+
+    sb.assert_link(".a", "moved/common/.a");
+    assert!(
+        sb.read("moved/common/perch.toml")
+            .contains("dotfiles_dir = \"~/moved\" # here")
+    );
+}

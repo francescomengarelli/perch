@@ -5,7 +5,10 @@ mod context;
 mod manifest;
 mod utils;
 
-use crate::{context::Context, utils::expand_tilde};
+use crate::{
+    context::Context,
+    utils::{absolutize, expand_tilde},
+};
 use std::path::PathBuf;
 
 use anyhow::Result;
@@ -15,7 +18,7 @@ use cli::{Cli, Commands};
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    let config_path = if let Some(path) = cli.config.map(|f| expand_tilde(&f)) {
+    let config_path = if let Some(path) = cli.config.map(|f| absolutize(&f)) {
         let path = path?;
         if !path.exists() {
             anyhow::bail!(
@@ -31,6 +34,7 @@ fn main() -> Result<()> {
 
     let config = config_path.as_ref().map(|p| config::load(p)).transpose()?;
     let mut context = Context::new(config.as_ref(), cli.verbose)?;
+    let original_dotfiles_dir = context.dotfiles_dir.clone();
 
     match cli.command {
         Commands::Sync { dry_run } => commands::sync::run(&context, dry_run)?,
@@ -44,8 +48,13 @@ fn main() -> Result<()> {
     }
 
     // Commands like move-dir relocate the dotfiles; remember where they went.
+    // A config passed by path from inside the repo moved along with it.
     if let Some(config_path) = &config_path {
-        config::persist_dotfiles_dir(config_path, &context.dotfiles_dir)?;
+        let config_path = match config_path.strip_prefix(&original_dotfiles_dir) {
+            Ok(relative) => context.dotfiles_dir.join(relative),
+            Err(_) => config_path.clone(),
+        };
+        config::persist_dotfiles_dir(&config_path, &context.dotfiles_dir)?;
     }
 
     Ok(())
