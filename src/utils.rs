@@ -137,7 +137,7 @@ pub fn symlink(original: &Path, link: &Path) -> Result<()> {
 pub fn copy(from: &Path, to: &Path) -> Result<()> {
     create_parent_dirs(to)?;
 
-    fs::copy(from, &to).with_context(|| {
+    fs::copy(from, to).with_context(|| {
         format!(
             "i couldn't copy from {} to {}",
             from.display(),
@@ -152,10 +152,10 @@ pub fn copy(from: &Path, to: &Path) -> Result<()> {
 pub fn root_ignore(dotfiles_dir: &Path) -> Result<ignore::gitignore::Gitignore> {
     let mut builder = ignore::gitignore::GitignoreBuilder::new(dotfiles_dir);
     let root_ignore = dotfiles_dir.join(".perchignore");
-    if root_ignore.exists() {
-        if let Some(err) = builder.add(&root_ignore) {
-            return Err(err).with_context(|| format!("i couldn't read {}", root_ignore.display()));
-        }
+    if root_ignore.exists()
+        && let Some(err) = builder.add(&root_ignore)
+    {
+        return Err(err).with_context(|| format!("i couldn't read {}", root_ignore.display()));
     }
     builder
         .build()

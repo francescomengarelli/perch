@@ -29,7 +29,7 @@ fn main() -> Result<()> {
         fallback.exists().then_some(fallback)
     };
 
-    let config = config_path.as_ref().map(|p| config::load(&p)).transpose()?;
+    let config = config_path.as_ref().map(|p| config::load(p)).transpose()?;
     let mut context = Context::new(config.as_ref(), cli.verbose)?;
 
     match cli.command {
