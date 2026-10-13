@@ -19,3 +19,8 @@ opt-level = "z"    # optimize for size instead of speed
 lto = true         # link-time optimization, removes dead code
 codegen-units = 1  # slower compile, better optimization
 panic = "abort"    # removes unwinding machinery
+
+[dev-dependencies]
+assert_cmd = "2.2.2"
+predicates = "3.1.4"
+tempfile = "3.27.0"
