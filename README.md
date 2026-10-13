@@ -59,9 +59,11 @@ patterns use the same syntax as `.gitignore`; Git's own ignore files are not
 used by Perch.
 
 Put one at the root of the dotfiles repository (`~/dotfiles/.perchignore`) for
-rules loaded with every active module. You can also put one anywhere inside a
-module. For example, `~/dotfiles/common/.config/.perchignore` applies only to
-the `.config` directory and its descendants.
+rules loaded with every active module; its patterns are relative to the
+repository root (e.g. `common/.config/nvim/lazy-lock.json`). You can also put
+one anywhere inside a module. For example, `~/dotfiles/common/.config/.perchignore`
+applies only to the `.config` directory and its descendants. Both `sync` and
+`add` honor them, and `.perchignore` files themselves are never symlinked.
 
 ```gitignore
 # In ~/dotfiles/common/.config/.perchignore:
@@ -71,14 +73,24 @@ nvim/.local/
 
 ## Commands
 
-| Command                 | What it does                                         |
-| ----------------------- | ---------------------------------------------------- |
-| `perch sync`            | Symlink all active modules to their target locations |
-| `perch update`          | Pull latest changes from remote, then re-sync        |
-| `perch status`          | Run `git status` in the dotfiles repo                |
-| `perch add <m> <path>`  | Move files into a module and symlink them back       |
-| `perch move-dir <path>` | Move the dotfiles directory to a new location        |
-| `perch self-upgrade`    | Fetch latest perch release and update to it          |
+| Command                   | What it does                                            |
+| ------------------------- | ------------------------------------------------------- |
+| `perch sync`              | Symlink all active modules to their target locations    |
+| `perch sync --dry-run`    | Show what `sync` would link and what conflicts          |
+| `perch update`            | Pull latest changes from remote, then re-sync           |
+| `perch status`            | Run `git status` in the dotfiles repo                   |
+| `perch add <m> <path>...` | Move files into a module and symlink them back          |
+| `perch remove <path>...`  | Stop managing files: move them back out of the repo     |
+| `perch prune [--dry-run]` | Remove stale links (file gone, or module inactive)      |
+| `perch move-dir <path>`   | Move the dotfiles directory to a new location           |
+| `perch self-upgrade`      | Fetch latest perch release and update to it             |
+
+`sync` never overwrites anything: if a target already exists and isn't one of
+perch's links, nothing is changed until you resolve it.
+
+Perch remembers the links it creates in `$XDG_STATE_HOME/perch/links`
+(default `~/.local/state/perch/links`) so `prune` can find stale ones. If you
+upgraded from an older version, run `perch sync` once to fill it in.
 
 ## Configuration
 
@@ -99,6 +111,11 @@ when = "hostname | grep -q work-machine"
 
 `when` is a shell command — exit `0` means stow it. Condition on anything:
 OS, hostname, environment variables, presence of a file, whatever.
+
+A relative `dotfiles_dir` is relative to your home directory. Perch only
+writes to the config file when the dotfiles directory moves (`move-dir`, or an
+`update` that pulls a new `dotfiles_dir`), and then edits just that line —
+your comments and formatting are kept.
 
 ## First-time setup
 
