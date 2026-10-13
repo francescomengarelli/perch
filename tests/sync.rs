@@ -82,3 +82,17 @@ fn honors_perchignore() {
     assert!(!sb.path(".config/b/secret").exists());
     sb.assert_link(".config/b/keep", "dotfiles/common/.config/b/keep");
 }
+
+#[test]
+fn skips_active_modules_without_a_directory() {
+    let sb = Sandbox::new();
+    // no config: defaults are common + linux/macos, but only common exists
+    sb.write("dotfiles/common/.a", "a");
+
+    sb.perch(&["sync"])
+        .assert()
+        .success()
+        .stderr(contains("doesn't exist — skipping"))
+        .stderr(contains("1 modules synced"));
+    sb.assert_link(".a", "dotfiles/common/.a");
+}

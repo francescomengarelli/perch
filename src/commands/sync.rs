@@ -12,8 +12,18 @@ pub fn run(context: &context::Context) -> Result<()> {
 
     let mut conflict_count = 0;
     let mut to_symlink: Vec<(PathBuf, PathBuf)> = vec![];
+    let mut synced = 0;
     for module in &context.filtered_modules {
         let module_path = context.dotfiles_dir.join(module);
+        if !module_path.is_dir() {
+            eprintln!(
+                "module '{}' is active but {} doesn't exist — skipping",
+                module,
+                module_path.display()
+            );
+            continue;
+        }
+        synced += 1;
         for entry in utils::walk_dotfiles(&context.dotfiles_dir, &module_path) {
             let path = entry?;
             let relative = path.strip_prefix(&module_path)?;
@@ -50,7 +60,7 @@ pub fn run(context: &context::Context) -> Result<()> {
         context.log(2, &format!("{} is in place", to.display()));
     }
 
-    eprintln!("{} modules synced", context.filtered_modules.len());
+    eprintln!("{} modules synced", synced);
 
     Ok(())
 }
