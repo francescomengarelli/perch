@@ -27,7 +27,11 @@ esac
 
 # --- Map to release target triple ---
 if [ "$OS" = "linux" ]; then
-  TARGET="${ARCH}-unknown-linux-musl"
+  # must match the targets built in .github/workflows/release.yml
+  case "$ARCH" in
+    x86_64)  TARGET="x86_64-unknown-linux-musl" ;;
+    aarch64) TARGET="aarch64-unknown-linux-gnu" ;;
+  esac
 elif [ "$OS" = "macos" ]; then
   TARGET="${ARCH}-apple-darwin"
 fi

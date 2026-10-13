@@ -15,7 +15,9 @@ cleanup() {
 trap cleanup EXIT
 
 perror() {
-    printf "ERROR: $1\n" "${@:2}" >&2
+    fmt=$1
+    shift
+    printf "ERROR: $fmt\n" "$@" >&2
 }
 
 pusage() {
