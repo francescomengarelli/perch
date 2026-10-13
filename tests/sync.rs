@@ -81,6 +81,7 @@ fn honors_perchignore() {
     assert!(!sb.path(".config/a/x").exists());
     assert!(!sb.path(".config/b/secret").exists());
     sb.assert_link(".config/b/keep", "dotfiles/common/.config/b/keep");
+    assert!(!sb.path(".config/b/.perchignore").exists());
 }
 
 #[test]

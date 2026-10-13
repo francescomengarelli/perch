@@ -108,6 +108,8 @@ pub fn walk_dotfiles(root: &Path, module: &Path) -> impl Iterator<Item = Result<
 
     builder.build().filter_map(|e| match e {
         Ok(e) if e.file_type().map(|t| t.is_dir()).unwrap_or(false) => None,
+        // ignore rules configure perch; they don't belong in $HOME
+        Ok(e) if e.file_name() == ".perchignore" => None,
         Ok(e) => Some(Ok(e.into_path())),
         Err(e) => Some(Err(e.into())),
     })
