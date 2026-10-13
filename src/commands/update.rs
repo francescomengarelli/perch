@@ -1,13 +1,12 @@
 use crate::{
     commands,
-    config::{self},
-    context,
-    utils::expand_tilde,
+    config::{self, Config},
+    context::{self, Context as PerchContext},
 };
 use anyhow::{Context, Result};
-use std::{path::PathBuf, process::Command};
+use std::{path::Path, process::Command};
 
-pub fn run(context: &mut context::Context) -> Result<()> {
+pub fn run(context: &mut PerchContext, config_path: Option<&Path>) -> Result<()> {
     let status = Command::new("git")
         .arg("-C")
         .arg(&context.dotfiles_dir)
@@ -19,42 +18,51 @@ pub fn run(context: &mut context::Context) -> Result<()> {
         anyhow::bail!("git pull didn't go well — check the output above");
     }
 
-    let new_cfg = (|| -> anyhow::Result<Option<config::Config>> {
-        for module_name in &context.filtered_modules {
-            let config_path = context
-                .dotfiles_dir
-                .join(module_name)
-                .join(".config/perch/config.toml");
-
-            if let Some(config_path) = config_path.exists().then_some(config_path) {
-                let loaded = config::load(&config_path)
-                    .context("i found a config in your dotfiles directory but couldn't read it")?;
-                return Ok(Some(loaded));
-            }
-        }
-        Ok(None)
-    })()?;
-
-    crate::commands::sync::run(context)?;
-
-    let new_dotfiles_dir = new_cfg.and_then(|cfg| cfg.dotfiles_dir);
-    let move_note: String = if let Some(new_dir) = new_dotfiles_dir {
-        let target_path = expand_tilde(&PathBuf::from(new_dir))?;
-        if target_path != context.dotfiles_dir {
-            eprintln!(
-                "your config points to a new dotfiles directory — moving everything over from {} to {} now",
-                context.dotfiles_dir.display(),
-                target_path.display()
-            );
-            commands::move_dir::run(context, &target_path)?;
-            String::from(", dotfiles dir moved")
-        } else {
-            String::from("")
-        }
-    } else {
-        String::from("")
+    // The pull may have changed the config (modules, dotfiles_dir), so read
+    // it again instead of trusting what was loaded before.
+    let config = match config_path {
+        Some(path) => Some(
+            config::load(path)
+                .with_context(|| format!("i couldn't read {} after pulling", path.display()))?,
+        ),
+        None => find_repo_config(context)?,
     };
+
+    let mut fresh = context::Context::new(config.as_ref(), context.verbose)?;
+    let target_dir = fresh.dotfiles_dir.clone();
+    fresh.dotfiles_dir = context.dotfiles_dir.clone();
+
+    let mut move_note = "";
+    if target_dir != fresh.dotfiles_dir {
+        eprintln!(
+            "your config points to a new dotfiles directory — moving everything over from {} to {} now",
+            fresh.dotfiles_dir.display(),
+            target_dir.display()
+        );
+        commands::move_dir::run(&mut fresh, &target_dir)?;
+        move_note = ", dotfiles dir moved";
+    }
+
+    commands::sync::run(&fresh)?;
+    *context = fresh;
 
     eprintln!("update completed. dotfiles synced{}", move_note);
     Ok(())
+}
+
+/// Without a config file in place, look for one shipped inside an active module.
+fn find_repo_config(context: &PerchContext) -> Result<Option<Config>> {
+    for module_name in &context.filtered_modules {
+        let config_path = context
+            .dotfiles_dir
+            .join(module_name)
+            .join(".config/perch/config.toml");
+
+        if config_path.exists() {
+            let loaded = config::load(&config_path)
+                .context("i found a config in your dotfiles directory but couldn't read it")?;
+            return Ok(Some(loaded));
+        }
+    }
+    Ok(None)
 }
