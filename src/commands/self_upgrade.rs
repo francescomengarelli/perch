@@ -9,7 +9,7 @@ pub fn run() -> Result<()> {
     const VERSION: &str = env!("CARGO_PKG_VERSION");
     let latest_version = latest.tag_name.trim_start_matches('v');
 
-    if latest_version == VERSION {
+    if !is_newer(latest_version, VERSION)? {
         println!("i am already up to date ({})", VERSION);
         return Ok(());
     }
@@ -28,17 +28,25 @@ pub fn run() -> Result<()> {
 
     eprintln!("i found the asset for {}. downloading it...", target);
     let current = std::env::current_exe()?;
-    let temp = download_to_temp(&asset.browser_download_url, &current)?;
+    let temp = current.with_extension("tmp");
+    let installed = (|| -> Result<()> {
+        download_to(&asset.browser_download_url, &temp)?;
 
-    // Set executable permissions (Linux/macOS)
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(&temp, std::fs::Permissions::from_mode(0o755))?;
+        // Set executable permissions (Linux/macOS)
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&temp, std::fs::Permissions::from_mode(0o755))?;
+        }
+
+        // Atomic replace
+        std::fs::rename(&temp, &current)?;
+        Ok(())
+    })();
+    if let Err(e) = installed {
+        let _ = std::fs::remove_file(&temp);
+        return Err(e).context("i couldn't install the new version - nothing was changed");
     }
-
-    // Atomic replace
-    std::fs::rename(&temp, &current)?;
 
     println!("upgraded to {}", latest.tag_name);
 
@@ -64,7 +72,8 @@ fn get_latest_release() -> anyhow::Result<Release> {
 
     let resp = client
         .get("https://api.github.com/repos/francescomengarelli/perch/releases/latest")
-        .send()?;
+        .send()?
+        .error_for_status()?;
 
     let latest = resp.json::<Release>()?;
 
@@ -96,16 +105,47 @@ fn download_asset(url: &str) -> anyhow::Result<Vec<u8>> {
     Ok(bytes)
 }
 
-fn download_to_temp(
-    url: &str,
-    current_binary: &std::path::Path,
-) -> anyhow::Result<std::path::PathBuf> {
+fn download_to(url: &str, path: &std::path::Path) -> anyhow::Result<()> {
     let bytes = download_asset(url)?;
 
-    let temp_path = current_binary.with_extension("tmp");
-
-    let mut file = std::fs::File::create(&temp_path)?;
+    let mut file = std::fs::File::create(path)?;
     file.write_all(&bytes)?;
 
-    Ok(temp_path)
+    Ok(())
+}
+
+/// Parse an `x.y.z` version (ignoring any `-pre`/`+build` suffix).
+fn parse_version(version: &str) -> anyhow::Result<(u64, u64, u64)> {
+    let core = version.split(['-', '+']).next().unwrap_or(version);
+    let mut parts = core.split('.').map(str::parse::<u64>);
+    match (parts.next(), parts.next(), parts.next(), parts.next()) {
+        (Some(Ok(major)), Some(Ok(minor)), Some(Ok(patch)), None) => Ok((major, minor, patch)),
+        _ => anyhow::bail!("i can't make sense of version '{}'", version),
+    }
+}
+
+fn is_newer(latest: &str, current: &str) -> anyhow::Result<bool> {
+    Ok(parse_version(latest)? > parse_version(current)?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn compares_versions_numerically() {
+        assert!(is_newer("0.10.0", "0.9.2").unwrap());
+        assert!(is_newer("1.0.0", "0.99.99").unwrap());
+        assert!(!is_newer("0.9.2", "0.9.2").unwrap());
+        assert!(!is_newer("0.9.1", "0.9.2").unwrap());
+        assert!(!is_newer("0.9.2", "0.10.0").unwrap());
+        assert!(is_newer("0.9.3-rc.1", "0.9.2").unwrap());
+    }
+
+    #[test]
+    fn rejects_garbage_versions() {
+        assert!(parse_version("latest").is_err());
+        assert!(parse_version("1.2").is_err());
+        assert!(parse_version("1.2.3.4").is_err());
+    }
 }
