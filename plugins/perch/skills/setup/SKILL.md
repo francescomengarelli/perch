@@ -1,7 +1,7 @@
 ---
 name: setup
 description: Install perch and set up a dotfiles repo with it. Use when installing perch, bootstrapping dotfiles on a new machine, starting a dotfiles repo from scratch, or migrating to perch from GNU Stow, yadm, chezmoi, a bare git repo or loose config files.
-allowed-tools: Bash(command -v perch) Bash(perch --version)
+allowed-tools: Bash(command -v perch) Bash(perch --version) Bash(perch sync --dry-run)
 ---
 
 # Setting up perch
@@ -11,6 +11,7 @@ perch is a dotfiles manager. It symlinks each file in `~/dotfiles/<module>/` to 
 ## 1. Install
 
 Check whether perch is already installed: `command -v perch && perch --version`.
+These instructions need perch 0.10.0 or newer. If an older version is installed, suggest `perch self-upgrade` and ask before running it.
 
 If it isn't, confirm with the user, then install one of these ways:
 
@@ -34,12 +35,16 @@ Ask the user which one applies.
    ```sh
    git clone <repo-url> ~/dotfiles
    ```
-2. Before syncing, check for conflicts. Real files already in `~`, such as a distro default `.bashrc`, will abort the sync. Back them up with `mv <file> <file>.bak` after asking. The `dotfiles` skill has a look-ahead command for finding conflicts.
-3. Run the first sync, pointing perch at the in-repo config:
+2. Preview the first sync, pointing perch at the in-repo config:
+   ```sh
+   perch sync --dry-run --config ~/dotfiles/common/.config/perch/config.toml
+   ```
+   Real files already in `~`, such as a distro default `.bashrc`, show up as `conflict` lines and would abort the sync. Ask the user what to do with each one, then back it up with `mv <file> <file>.bak`.
+3. Run the first sync:
    ```sh
    perch sync --config ~/dotfiles/common/.config/perch/config.toml
    ```
-   If the repo has no config file, plain `perch sync` uses the defaults: `common`, plus `linux` or `macos`. Each active module's folder must exist.
+   If the repo has no config file, plain `perch sync` uses the defaults: `common`, plus `linux` or `macos`. Modules without a folder are skipped with a warning.
 4. From now on, plain `perch sync` and `perch update` work.
 
 ### B. Starting from scratch
@@ -73,7 +78,7 @@ Ask the user which one applies.
    name = "macos"
    when = "uname -s | grep -q Darwin"
    ```
-   perch rewrites this file on every run and strips comments, so don't rely on comments in it.
+   Comments are fine. perch only ever edits the `dotfiles_dir` line, and only when the repo moves.
 4. Link the config into place and confirm that perch works:
    ```sh
    perch sync --config ~/dotfiles/common/.config/perch/config.toml
@@ -83,9 +88,9 @@ Ask the user which one applies.
    perch add common ~/.gitconfig ~/.config/nvim
    perch add linux ~/.config/hypr
    ```
-   Before adopting a directory, look for junk inside it, such as caches, state, plugin directories, or `.DS_Store`. Exclude it with a `.perchignore` in that directory, or adopt only specific files.
+   Before adopting a directory, look for junk inside it, such as caches, state, plugin directories, or `.DS_Store`. Exclude it with a root `~/dotfiles/.perchignore` (step 6) or a `.perchignore` in that directory, or adopt only specific files. Write the ignore rules **before** running `add`, because `add` honors them.
    **Never adopt secrets** (`~/.ssh` keys, tokens, `.netrc`).
-6. Optionally add a root `~/dotfiles/.perchignore` (for example `.DS_Store`, `.perchignore`, `README.md`).
+6. Optionally add a root `~/dotfiles/.perchignore`, for example with `.DS_Store` and `README.md`. Patterns are relative to the repo root.
 7. Commit, and push if the user has a remote:
    ```sh
    git -C ~/dotfiles add -A && git -C ~/dotfiles commit -m "initial dotfiles"
@@ -105,14 +110,16 @@ Repo layouts map like this:
 **Migration from Stow:**
 1. Run `stow -D <pkg>` for every package **before** `perch sync`. Stow's directory-level links make every file under them a conflict.
 2. Remove leftover stow links pointing into the repo.
-3. Run `perch sync`.
+3. Run `perch sync --dry-run`. It should list `link` lines only, with no conflicts.
+4. Run `perch sync`.
 
 ## 3. Verify
 
 - `perch status`: the repo is clean, or only has expected changes.
 - Spot-check a few links with `readlink -f ~/.gitconfig`; each should point into the dotfiles repo.
-- Run `perch sync` again. It should report `N modules synced` with no conflicts, because it's safe to re-run.
+- `perch sync --dry-run` should now report `0 to link` and no conflicts.
 - Tell the user their daily commands:
-  - `perch add <module> <path>` to adopt a new file.
+  - `perch add <module> <path>` to adopt a new file, and `perch remove <path>` to stop managing one.
   - `perch update` to pull and sync.
   - `perch status` to see the repo state.
+  - `perch prune` to clean up links left behind by deleted files or deactivated modules.
