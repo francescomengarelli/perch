@@ -28,7 +28,7 @@ fn main() -> Result<()> {
         fallback.exists().then_some(fallback)
     };
 
-    let mut config = config_path.as_ref().map(|p| config::load(&p)).transpose()?;
+    let config = config_path.as_ref().map(|p| config::load(&p)).transpose()?;
     let mut context = Context::new(config.as_ref(), cli.verbose)?;
 
     match cli.command {
@@ -40,10 +40,9 @@ fn main() -> Result<()> {
         Commands::SelfUpgrade => commands::self_upgrade::run()?,
     }
 
-    // FIXME: clean this up
-    if let (Some(config), Some(config_path)) = (&mut config, &config_path) {
-        config.dotfiles_dir = Some(utils::unexpand_tilde(&context.dotfiles_dir)?);
-        config::save(&config, &config_path)?;
+    // Commands like move-dir relocate the dotfiles; remember where they went.
+    if let Some(config_path) = &config_path {
+        config::persist_dotfiles_dir(config_path, &context.dotfiles_dir)?;
     }
 
     Ok(())

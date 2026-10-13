@@ -11,6 +11,7 @@ ignore = "0.4.28"
 reqwest = { version = "0.13.4", features = ["blocking", "json"] }
 serde = { version = "1.0.228", features = ["derive"] }
 toml = "1.1.2"
+toml_edit = "0.25.17"
 walkdir = "2.5.0"
 
 [profile.release]
