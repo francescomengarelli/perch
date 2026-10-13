@@ -43,7 +43,7 @@ pub fn run(context: &mut PerchContext, config_path: Option<&Path>) -> Result<()>
         move_note = ", dotfiles dir moved";
     }
 
-    commands::sync::run(&fresh)?;
+    commands::sync::run(&fresh, false)?;
     *context = fresh;
 
     eprintln!("update completed. dotfiles synced{}", move_note);

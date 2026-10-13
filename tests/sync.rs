@@ -97,3 +97,35 @@ fn skips_active_modules_without_a_directory() {
         .stderr(contains("1 modules synced"));
     sb.assert_link(".a", "dotfiles/common/.a");
 }
+
+#[test]
+fn dry_run_changes_nothing() {
+    let sb = Sandbox::new();
+    sb.config(COMMON_ONLY);
+    sb.write("dotfiles/common/.a", "a");
+    sb.write("dotfiles/common/.b", "b");
+    sb.write(".b", "real");
+
+    sb.perch(&["sync", "--dry-run"])
+        .assert()
+        .failure()
+        .stdout(contains("link ~/.a -> ~/dotfiles/common/.a"))
+        .stdout(contains("conflict ~/.b"))
+        .stderr(contains("nothing changed"));
+
+    assert!(!sb.path(".a").exists());
+    assert!(!sb.state_dir().join("perch/links").exists());
+}
+
+#[test]
+fn dry_run_succeeds_without_conflicts() {
+    let sb = Sandbox::new();
+    sb.config(COMMON_ONLY);
+    sb.write("dotfiles/common/.a", "a");
+
+    sb.perch(&["sync", "-n"])
+        .assert()
+        .success()
+        .stdout(contains("link ~/.a"));
+    assert!(!sb.path(".a").exists());
+}

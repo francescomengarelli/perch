@@ -1,5 +1,6 @@
 use crate::{
     context,
+    manifest::Manifest,
     utils::{self, create_parent_dirs, move_file, symlink, unexpand_tilde, walk_source_files},
 };
 use std::{collections::HashSet, fs, path::PathBuf};
@@ -117,22 +118,29 @@ pub fn run(context: &context::Context, paths: &[PathBuf], module: &str) -> Resul
         );
     }
 
-    for (file, target) in to_add {
-        create_parent_dirs(&target)?;
+    let mut manifest = Manifest::load();
+    let result = (|| -> Result<()> {
+        for (file, target) in to_add {
+            create_parent_dirs(&target)?;
 
-        move_file(&file, &target)?;
+            move_file(&file, &target)?;
 
-        symlink(&target, &file)?;
+            symlink(&target, &file)?;
+            manifest.insert(&file);
 
-        context.log(
-            2,
-            &format!(
-                "{} is now managed — moved into '{}' and linked back",
-                file.display(),
-                module
-            ),
-        );
-    }
+            context.log(
+                2,
+                &format!(
+                    "{} is now managed — moved into '{}' and linked back",
+                    file.display(),
+                    module
+                ),
+            );
+        }
+        Ok(())
+    })();
+    manifest.save();
+    result?;
 
     eprintln!(
         "{} files added to {} and symlinked them back",

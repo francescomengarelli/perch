@@ -7,6 +7,7 @@ use std::{
 
 use crate::{
     context,
+    manifest::Manifest,
     utils::{self, normalize, paths_equal},
 };
 
@@ -115,6 +116,7 @@ fn copy_tree(from: &Path, to: &Path) -> Result<()> {
 /// `new`. Links that point anywhere else are not ours and stay untouched.
 fn relink(context: &context::Context, old: &Path, new: &Path) -> Result<usize> {
     let home = utils::get_home_dir()?;
+    let mut manifest = Manifest::load();
     let mut count = 0;
 
     for module in &context.all_modules {
@@ -134,6 +136,7 @@ fn relink(context: &context::Context, old: &Path, new: &Path) -> Result<usize> {
                     fs::remove_file(&link)
                         .with_context(|| format!("i couldn't remove {}", link.display()))?;
                     utils::symlink(&file, &link)?;
+                    manifest.insert(&link);
                     count += 1;
                     context.log(
                         2,
@@ -145,5 +148,6 @@ fn relink(context: &context::Context, old: &Path, new: &Path) -> Result<usize> {
         }
     }
 
+    manifest.save();
     Ok(count)
 }

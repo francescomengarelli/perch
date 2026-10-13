@@ -2,6 +2,7 @@ mod cli;
 mod commands;
 mod config;
 mod context;
+mod manifest;
 mod utils;
 
 use crate::{context::Context, utils::expand_tilde};
@@ -32,10 +33,12 @@ fn main() -> Result<()> {
     let mut context = Context::new(config.as_ref(), cli.verbose)?;
 
     match cli.command {
-        Commands::Sync => commands::sync::run(&context)?,
+        Commands::Sync { dry_run } => commands::sync::run(&context, dry_run)?,
         Commands::Update => commands::update::run(&mut context, config_path.as_deref())?,
         Commands::Status => commands::status::run(&context)?,
         Commands::Add { path, module } => commands::add::run(&context, &path, &module)?,
+        Commands::Remove { path } => commands::remove::run(&context, &path)?,
+        Commands::Prune { dry_run } => commands::prune::run(&context, dry_run)?,
         Commands::MoveDir { path } => commands::move_dir::run(&mut context, &path)?,
         Commands::SelfUpgrade => commands::self_upgrade::run()?,
     }
