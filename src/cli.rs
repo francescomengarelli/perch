@@ -39,8 +39,9 @@ pub enum Commands {
     },
     /// Move the dotfiles directory to a new location and re-sync.
     ///
-    /// Physically moves the dotfiles directory to `path`, updates all symlinks,
-    /// and saves the new location to ~/.config/perch/config.toml if it exists.
+    /// Moves the dotfiles directory to `path` (which must not exist yet), re-points
+    /// the symlinks that pointed into it, and saves the new location to the
+    /// config file in use, if there is one.
     ///
     /// Example: `perch move-dir ~/new/dotfiles`
     MoveDir {

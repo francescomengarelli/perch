@@ -42,8 +42,15 @@ pub fn persist_dotfiles_dir(path: &Path, dotfiles_dir: &Path) -> Result<()> {
         return Ok(());
     }
 
-    let value = unexpand_tilde(dotfiles_dir)?;
-    doc["dotfiles_dir"] = toml_edit::value(value.to_string_lossy().as_ref());
+    let new = unexpand_tilde(dotfiles_dir)?.to_string_lossy().into_owned();
+    if let Some(value) = doc.get_mut("dotfiles_dir").and_then(|i| i.as_value_mut()) {
+        // keep surrounding whitespace and trailing comments
+        let decor = value.decor().clone();
+        *value = new.into();
+        *value.decor_mut() = decor;
+    } else {
+        doc["dotfiles_dir"] = toml_edit::value(new);
+    }
 
     std::fs::write(path, doc.to_string())
         .with_context(|| format!("i couldn't write {}", path.display()))?;
