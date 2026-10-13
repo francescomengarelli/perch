@@ -20,6 +20,19 @@ cd perch
 cargo install --root ~/.local --path .
 ```
 
+## Claude Code plugin
+
+Perch ships a [Claude Code](https://claude.com/claude-code) plugin that teaches
+Claude how to set up and manage your dotfiles with perch:
+
+```
+/plugin marketplace add francescomengarelli/perch
+/plugin install perch@perch
+```
+
+It provides two skills: `perch:setup` (install, bootstrap, migrate from Stow
+and friends) and `perch:dotfiles` (adopt, sync, update, troubleshoot).
+
 ## How it works
 
 Perch manages dotfiles by stowing modules from your dotfiles repo into your
@@ -65,7 +78,7 @@ nvim/.local/
 | `perch status`          | Run `git status` in the dotfiles repo                |
 | `perch add <m> <path>`  | Move files into a module and symlink them back       |
 | `perch move-dir <path>` | Move the dotfiles directory to a new location        |
-| `perch self-upgrade`    | Feth latest perch release and update to it           |
+| `perch self-upgrade`    | Fetch latest perch release and update to it          |
 
 ## Configuration
 

@@ -1,0 +1,14 @@
+{
+  "name": "perch",
+  "description": "Claude Code plugins for perch, the dotfiles manager",
+  "owner": {
+    "name": "Francesco Mengarelli"
+  },
+  "plugins": [
+    {
+      "name": "perch",
+      "source": "./plugins/perch",
+      "description": "Teaches Claude to manage dotfiles with perch: adopt, sync, update and troubleshoot symlinked configs"
+    }
+  ]
+}

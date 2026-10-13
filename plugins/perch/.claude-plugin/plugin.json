@@ -1,0 +1,11 @@
+{
+  "name": "perch",
+  "description": "Teaches Claude to manage dotfiles with perch: adopt, sync, update and troubleshoot symlinked configs",
+  "author": {
+    "name": "Francesco Mengarelli"
+  },
+  "homepage": "https://github.com/francescomengarelli/perch",
+  "repository": "https://github.com/francescomengarelli/perch",
+  "license": "MIT",
+  "keywords": ["dotfiles", "symlink", "stow", "perch"]
+}
