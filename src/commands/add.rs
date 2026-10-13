@@ -1,6 +1,6 @@
 use crate::{
     context,
-    utils::{self, create_parent_dirs, symlink, unexpand_tilde, walk_source_files},
+    utils::{self, create_parent_dirs, move_file, symlink, unexpand_tilde, walk_source_files},
 };
 use std::{collections::HashSet, fs, path::PathBuf};
 
@@ -14,6 +14,20 @@ pub fn run(context: &context::Context, paths: &[PathBuf], module: &str) -> Resul
     let target_dir = context.dotfiles_dir.join(module);
     let dotfiles_dir =
         fs::canonicalize(&context.dotfiles_dir).unwrap_or_else(|_| context.dotfiles_dir.clone());
+
+    if !context.all_modules.iter().any(|m| m == module) {
+        eprintln!(
+            "module '{}' isn't in your config — other machines won't link these files",
+            module
+        );
+    } else if !context.filtered_modules.iter().any(|m| m == module) {
+        eprintln!(
+            "module '{}' isn't active on this machine — `perch sync` won't link these files here",
+            module
+        );
+    }
+
+    let ignore = utils::root_ignore(&context.dotfiles_dir)?;
 
     let mut count = 0;
     let mut conflict_count = 0;
@@ -69,6 +83,20 @@ pub fn run(context: &context::Context, paths: &[PathBuf], module: &str) -> Resul
             };
             let target = target_dir.join(from_home);
 
+            // Respect the repo-root .perchignore: sync would never link this
+            // file back, so don't adopt it in the first place.
+            let repo_relative = target.strip_prefix(&context.dotfiles_dir)?;
+            if ignore
+                .matched_path_or_any_parents(repo_relative, false)
+                .is_ignore()
+            {
+                context.log(
+                    1,
+                    &format!("{} is ignored by .perchignore — skipping", file.display()),
+                );
+                continue;
+            }
+
             if target.symlink_metadata().is_ok() {
                 eprintln!(
                     "{} is already in my dotfiles directory — not overwriting it",
@@ -92,9 +120,7 @@ pub fn run(context: &context::Context, paths: &[PathBuf], module: &str) -> Resul
     for (file, target) in to_add {
         create_parent_dirs(&target)?;
 
-        fs::rename(&file, &target).with_context(|| {
-            format!("i couldn't move {} to {}", file.display(), target.display())
-        })?;
+        move_file(&file, &target)?;
 
         symlink(&target, &file)?;
 

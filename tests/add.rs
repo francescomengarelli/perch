@@ -67,3 +67,49 @@ fn skips_paths_outside_home() {
 
     assert!(outside.path().exists());
 }
+
+#[test]
+fn honors_root_perchignore() {
+    let sb = Sandbox::new();
+    sb.config(COMMON_ONLY);
+    sb.write(
+        "dotfiles/.perchignore",
+        ".DS_Store\ncommon/.config/app/cache/\n",
+    );
+    sb.write(".config/app/config", "c");
+    sb.write(".config/app/.DS_Store", "x");
+    sb.write(".config/app/cache/blob", "x");
+
+    sb.perch(&["add", "common", ".config/app"])
+        .assert()
+        .success();
+
+    sb.assert_link(".config/app/config", "dotfiles/common/.config/app/config");
+    assert!(!sb.is_link(".config/app/.DS_Store"));
+    assert!(!sb.is_link(".config/app/cache/blob"));
+    assert!(!sb.path("dotfiles/common/.config/app/.DS_Store").exists());
+}
+
+#[test]
+fn warns_about_unknown_module() {
+    let sb = Sandbox::new();
+    sb.config(COMMON_ONLY);
+    sb.write(".a", "a");
+
+    sb.perch(&["add", "typo", ".a"])
+        .assert()
+        .success()
+        .stderr(contains("isn't in your config"));
+}
+
+#[test]
+fn warns_about_inactive_module() {
+    let sb = Sandbox::new();
+    sb.config("[[module]]\nname = \"off\"\nwhen = \"false\"\n");
+    sb.write(".a", "a");
+
+    sb.perch(&["add", "off", ".a"])
+        .assert()
+        .success()
+        .stderr(contains("isn't active on this machine"));
+}

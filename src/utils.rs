@@ -146,3 +146,34 @@ pub fn copy(from: &Path, to: &Path) -> Result<()> {
     })?;
     Ok(())
 }
+
+/// Matcher for the repo-root `.perchignore`, whose patterns are relative to
+/// the dotfiles directory (e.g. `common/.config/nvim/lazy-lock.json`).
+pub fn root_ignore(dotfiles_dir: &Path) -> Result<ignore::gitignore::Gitignore> {
+    let mut builder = ignore::gitignore::GitignoreBuilder::new(dotfiles_dir);
+    let root_ignore = dotfiles_dir.join(".perchignore");
+    if root_ignore.exists() {
+        if let Some(err) = builder.add(&root_ignore) {
+            return Err(err).with_context(|| format!("i couldn't read {}", root_ignore.display()));
+        }
+    }
+    builder
+        .build()
+        .with_context(|| format!("i couldn't read {}", root_ignore.display()))
+}
+
+/// Move a file, falling back to copy + delete when `from` and `to` live on
+/// different filesystems.
+pub fn move_file(from: &Path, to: &Path) -> Result<()> {
+    match fs::rename(from, to) {
+        Ok(()) => Ok(()),
+        Err(e) if e.kind() == std::io::ErrorKind::CrossesDevices => {
+            fs::copy(from, to).with_context(|| {
+                format!("i couldn't copy {} to {}", from.display(), to.display())
+            })?;
+            fs::remove_file(from).with_context(|| format!("i couldn't remove {}", from.display()))
+        }
+        Err(e) => Err(e)
+            .with_context(|| format!("i couldn't move {} to {}", from.display(), to.display())),
+    }
+}
