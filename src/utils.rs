@@ -177,3 +177,14 @@ pub fn move_file(from: &Path, to: &Path) -> Result<()> {
             .with_context(|| format!("i couldn't move {} to {}", from.display(), to.display())),
     }
 }
+
+/// Resolve a configured `dotfiles_dir`: `~` is expanded and relative paths are
+/// taken relative to `$HOME`, so the result never depends on the cwd.
+pub fn resolve_dotfiles_dir(path: &Path) -> Result<PathBuf> {
+    let expanded = expand_tilde(path)?;
+    if expanded.is_absolute() {
+        Ok(expanded)
+    } else {
+        Ok(get_home_dir()?.join(expanded))
+    }
+}

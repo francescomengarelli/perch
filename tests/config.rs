@@ -28,3 +28,20 @@ fn config_without_dotfiles_dir_is_left_untouched() {
 
     assert_eq!(sb.read(".config/perch/config.toml"), config);
 }
+
+#[test]
+fn relative_dotfiles_dir_is_relative_to_home() {
+    let sb = Sandbox::new();
+    let config = "dotfiles_dir = \"dots\"\n[[module]]\nname = \"common\"\n";
+    sb.config(config);
+    sb.write("dots/common/.a", "a");
+    sb.mkdir("somewhere/else");
+
+    sb.perch(&["sync"])
+        .current_dir(sb.path("somewhere/else"))
+        .assert()
+        .success();
+
+    sb.assert_link(".a", "dots/common/.a");
+    assert_eq!(sb.read(".config/perch/config.toml"), config);
+}

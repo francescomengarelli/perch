@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 
-use crate::utils::{expand_tilde, unexpand_tilde};
+use crate::utils::{resolve_dotfiles_dir, unexpand_tilde};
 
 #[derive(Deserialize)]
 pub struct Config {
@@ -38,7 +38,7 @@ pub fn persist_dotfiles_dir(path: &Path, dotfiles_dir: &Path) -> Result<()> {
         .get("dotfiles_dir")
         .and_then(|v| v.as_str())
         .unwrap_or("~/dotfiles");
-    if expand_tilde(Path::new(stored))? == dotfiles_dir {
+    if resolve_dotfiles_dir(Path::new(stored))? == dotfiles_dir {
         return Ok(());
     }
 

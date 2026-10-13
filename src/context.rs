@@ -1,8 +1,11 @@
-use std::{path::PathBuf, process::Stdio};
+use std::{
+    path::{Path, PathBuf},
+    process::Stdio,
+};
 
 use crate::{
     config::{Config, Module},
-    utils::{absolutize, expand_tilde},
+    utils::resolve_dotfiles_dir,
 };
 
 pub struct Context {
@@ -18,15 +21,11 @@ impl Context {
             eprintln!("config not found. using sensible defaults")
         }
 
-        let mut dotfiles_dir = if let Some(config) = &config {
+        let dotfiles_dir = resolve_dotfiles_dir(
             config
-                .dotfiles_dir
-                .as_ref()
-                .map(|d| expand_tilde(&PathBuf::from(d)))
-                .unwrap_or_else(|| expand_tilde(&PathBuf::from("~/dotfiles")))?
-        } else {
-            expand_tilde(&PathBuf::from("~/dotfiles"))?
-        };
+                .and_then(|c| c.dotfiles_dir.as_deref())
+                .unwrap_or(Path::new("~/dotfiles")),
+        )?;
 
         let modules = if let Some(config) = config {
             config.module.clone()
@@ -46,8 +45,6 @@ impl Context {
                 },
             ]
         };
-
-        dotfiles_dir = absolutize(&dotfiles_dir)?;
 
         Ok(Context {
             verbose,
