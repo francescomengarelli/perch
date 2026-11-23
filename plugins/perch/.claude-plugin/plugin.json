@@ -1,5 +1,6 @@
 {
   "name": "perch",
+  "version": "0.1.0",
   "description": "Teaches Claude to manage dotfiles with perch: adopt, sync, update and troubleshoot symlinked configs",
   "author": {
     "name": "Francesco Mengarelli"
