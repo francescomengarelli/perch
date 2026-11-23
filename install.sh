@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-REPO="francescomengarelli/perch"
+BASE="https://get.mengarelli.eu/perch"
 BIN="perch"
 INSTALL_DIR="${HOME}/.local/bin"
 
@@ -37,17 +37,15 @@ elif [ "$OS" = "macos" ]; then
 fi
 
 # --- Resolve latest release tag ---
-LATEST=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" \
-  | grep '"tag_name"' \
-  | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/')
+LATEST=$(curl -fsSL "${BASE}/latest" || true)
 
 if [ -z "$LATEST" ]; then
-  echo "couldn't find the latest release — is the GitHub API reachable?"
+  echo "couldn't find the latest release — is ${BASE} reachable?"
   exit 1
 fi
 
 ASSET="${BIN}-${LATEST}-${TARGET}"
-URL="https://github.com/${REPO}/releases/download/${LATEST}/${ASSET}"
+URL="${BASE}/download/${LATEST}/${ASSET}"
 
 # --- Download ---
 echo "fetching ${BIN} ${LATEST} for ${TARGET}..."
