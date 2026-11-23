@@ -1,13 +1,14 @@
 use anyhow::{Context, Result};
-use serde::Deserialize;
 use std::io::Write;
 
+const BASE_URL: &str = "https://get.mengarelli.eu/perch";
+
 pub fn run() -> Result<()> {
-    let latest =
-        get_latest_release().with_context(|| "i failed to fetch latest release from GitHub")?;
+    let latest = get_latest_tag()
+        .with_context(|| format!("i couldn't fetch the latest release from {}", BASE_URL))?;
 
     const VERSION: &str = env!("CARGO_PKG_VERSION");
-    let latest_version = latest.tag_name.trim_start_matches('v');
+    let latest_version = latest.trim_start_matches('v');
 
     if !is_newer(latest_version, VERSION)? {
         println!("i am already up to date ({})", VERSION);
@@ -15,22 +16,14 @@ pub fn run() -> Result<()> {
     }
 
     let target = current_target()?;
-    let asset = latest
-        .assets
-        .iter()
-        .find(|a| a.name.contains(target))
-        .ok_or_else(|| {
-            anyhow::anyhow!(
-                "i haven't found the right asset for your platform: {}",
-                target
-            )
-        })?;
+    let asset = format!("perch-{}-{}", latest, target);
+    let url = format!("{}/download/{}/{}", BASE_URL, latest, asset);
 
-    eprintln!("i found the asset for {}. downloading it...", target);
+    eprintln!("downloading {} for {}...", latest, target);
     let current = std::env::current_exe()?;
     let temp = current.with_extension("tmp");
     let installed = (|| -> Result<()> {
-        download_to(&asset.browser_download_url, &temp)?;
+        download_to(&url, &temp)?;
 
         // Set executable permissions (Linux/macOS)
         #[cfg(unix)]
@@ -48,36 +41,29 @@ pub fn run() -> Result<()> {
         return Err(e).context("i couldn't install the new version - nothing was changed");
     }
 
-    println!("upgraded to {}", latest.tag_name);
+    println!("upgraded to {}", latest);
 
     Ok(())
 }
 
-#[derive(Deserialize)]
-struct Release {
-    tag_name: String,
-    assets: Vec<Asset>,
-}
-
-#[derive(Deserialize)]
-struct Asset {
-    name: String,
-    browser_download_url: String,
-}
-
-fn get_latest_release() -> anyhow::Result<Release> {
+fn get_latest_tag() -> anyhow::Result<String> {
     let client = reqwest::blocking::Client::builder()
-        .user_agent("perch-cli") // GitHub API requires a User-Agent
+        .user_agent("perch-cli")
         .build()?;
 
-    let resp = client
-        .get("https://api.github.com/repos/francescomengarelli/perch/releases/latest")
+    let tag = client
+        .get(format!("{}/latest", BASE_URL))
         .send()?
-        .error_for_status()?;
+        .error_for_status()?
+        .text()?
+        .trim()
+        .to_string();
 
-    let latest = resp.json::<Release>()?;
+    if tag.is_empty() {
+        anyhow::bail!("the server answered with an empty tag");
+    }
 
-    Ok(latest)
+    Ok(tag)
 }
 
 fn current_target() -> anyhow::Result<&'static str> {
