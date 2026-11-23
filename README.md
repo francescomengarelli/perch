@@ -9,7 +9,7 @@ your dotfiles, settled into place.
 ## Installation
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/francescomengarelli/perch/main/install.sh | sh
+curl -fsSL https://get.mengarelli.eu/perch | sh
 ```
 
 Or build from source:

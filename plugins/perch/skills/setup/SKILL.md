@@ -17,7 +17,7 @@ If it isn't, confirm with the user, then install one of these ways:
 
 ```sh
 # prebuilt release into ~/.local/bin
-curl -fsSL https://raw.githubusercontent.com/francescomengarelli/perch/main/install.sh | sh
+curl -fsSL https://get.mengarelli.eu/perch | sh
 
 # or build from source (needs cargo)
 cargo install --root ~/.local --git https://github.com/francescomengarelli/perch
